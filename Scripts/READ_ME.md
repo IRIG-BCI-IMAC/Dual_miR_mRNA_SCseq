@@ -75,14 +75,6 @@ Targets are selected using two options:
 Outputs:
 Plots with barplot of number of targets for each miRNAs selected for analysis. 
 
-### `Histogram_jaccard_index.R`
-Intersections between the set of predicted targets of each miRNAs with the set of core targets of hsa-miR-92a-3p are compute and compare with random intersection expected. Targets are selected using different options: 
-- Both conserved and non-conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS <= 0 
-- Conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS < -0.1 
-- Conserved targets, threshold on targets expression > -7 RPKM in log2 scale and TCS < -0.1 
-
-Outputs: 
-Plot with histogram of percentage of common targets between miRNAs and core targets of hsa-miR-92a-3p and histogram of random percentage of intersection expected (H0). 
 
 ### `GSEA_Negative_Control.R`
 GSEA analysis with correlations computed using the expression of hsa-miR-92a-3p in every cases, the targets selection is made for every miRNAs using different options and with Pearson correlations and log2 scale for miRNA and mRNA expression. 
@@ -92,6 +84,23 @@ GSEA analysis with correlations computed using the expression of hsa-miR-92a-3p 
 Outputs: 
 Table of results from GSEA analysis for all miRNAs selected for analysis.
 Plots of GSEA results log10-pvalue as a function of enrichment score.
+
+### `Histogram_jaccard_index.R`
+Intersections between the set of predicted targets of each miRNAs with the set of core targets of hsa-miR-92a-3p are compute and compare with random intersection expected. Targets are selected using different options: 
+- Both conserved and non-conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS <= 0 
+- Conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS < -0.1 
+- Conserved targets, threshold on targets expression > -7 RPKM in log2 scale and TCS < -0.1 
+
+Outputs: 
+Plot with histogram of percentage of common targets between miRNAs and core targets of hsa-miR-92a-3p and histogram of random percentage of intersection expected (H0). 
+
+### `GSEA_simulation_Jaccard_core.R`
+GSEA analysis on simulated sets of 588 targets which have a Jaccard index between 0 and 0.07 with miR-92a-3p core targets. For each Jaccard index, the simulated sets of targets were generated 100 times and the p-value of GSEA analysis were plot as boxplots.
+
+Outputs:
+Boxplot of GSEA log10 (pvalues) obtained for miR-92a-3p correlations with simulated sets of 588 targets with varying Jaccard index with the
+miR-92a-3p target core. 
+
 
 ### `P-values_simulations.R`
 GSEA analysis and Kolmogorov-Smirnov test on simulated genes and sets of targets for different number of used targets.
