@@ -195,13 +195,51 @@ keep_one_loci <- function (data_miRNA = data_miRNA_19,
 
 ###########################################################################
 ###########################################################################
-## Transform TargetScan txt files into rds file ---------------------------
+## Select human information only from TargetScan files --------------------
 ## the txt files are the one download from TargetScan.org
+###########################################################################
+targetscanHuman <- function (){
+  for (version in c("7.1", "8.0")){
+    version <- paste ("_",version, sep = '')
+    
+    ## import families information
+    families <- read.table (paste("R.data/miR_Family_Info",version,".txt", sep =''), 
+                            sep = '\t',header = TRUE)
+    Human_families <- families [which(families$Species.ID == 9606),] 
+    
+    
+    ## Non conserved predictions
+    all <-  read.table (paste("R.data/Summary_Counts.all_predictions",version,".txt", sep =''), 
+                        sep = '\t',header = TRUE)
+    Human_all <- all [which(all$Species.ID == 9606),] 
+    
+    
+    ## Conserved predictions
+    default <-  read.table (paste("R.data/Summary_Counts.default_predictions",version,".txt", sep =''), 
+                            sep = '\t',header = TRUE)
+    Human_default <- default [which(default$Species.ID == 9606),] 
+    
+    
+    ## merge Conserved and Non conserved prediction
+    both <- rbind (Human_default, Human_all)
+    
+    write.table (Human_families, paste("R.data/Human_miR_Family_Info",version,".txt", sep =''))
+    
+    write.table (both, paste("R.data/Human_Summary_Counts.both_predictions",version,".txt", sep =''))
+    
+    
+  }
+}
+
+###########################################################################
+###########################################################################
+## Transform TargetScan txt with human information files into rds file ----
 ###########################################################################
 targetscan2rds <- function (){
   for (version in c("7.1", "8.0")){
     version <- paste ("_",version, sep = '')
     
+
     name_prediction <- paste ("R.data/Human_Summary_Counts.both_predictions",
                               version,".txt", sep ='')
     data_TargetScan <-
@@ -213,6 +251,7 @@ targetscan2rds <- function (){
     
   }
 }
+
 
 ###########################################################################
 ###########################################################################
