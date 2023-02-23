@@ -1,5 +1,5 @@
 Data used for analysis:
-miRNA and mRNA seq data from Wang et al. paper available on GEO under series GSE114071. 
+miRNA and mRNA seq data from Wang et al. paper available on GEO under series [GSE114071](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE114071) 
 Those data are in rds file in this folder.
 
 
