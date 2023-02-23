@@ -13,13 +13,13 @@ and https://www.targetscan.org/vert_80/vert_80_data_download/Summary_Counts.all_
 
 For the v7.1 we used human data from both default predictions and all predictions files : 
 https://www.targetscan.org/vert_71/vert_71_data_download/Summary_Counts.default_predictions.txt.zip  
-and https://www.targetscan.org/vert_71/vert_71_data_download/Summary_Counts.all_predictions.txt.zip
+and https://www.targetscan.org/vert_71/vert_71_data_download/Summary_Counts.all_predictions.txt.zip  
 Those data are not available in this folder for a reason of weight. 
 
 
 TargetScan family information were downloaded for v8.0 and v7.1 respectively from:
 https://www.targetscan.org/vert_80/vert_80_data_download/miR_Family_Info.txt.zip  
-https://www.targetscan.org/vert_71/vert_71_data_download/miR_Family_Info.txt.zip
+https://www.targetscan.org/vert_71/vert_71_data_download/miR_Family_Info.txt.zip  
 Those data for human only are available in this folder. 
 
 
