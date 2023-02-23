@@ -1,5 +1,5 @@
 ###########################################################################
-## Function file 
+## Function file for Matter Arising
 ## Contain functions called in other scripts
 ###########################################################################
 
