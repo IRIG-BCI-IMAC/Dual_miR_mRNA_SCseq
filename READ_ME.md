@@ -16,6 +16,14 @@ Table of results from GSEA analysis for all miRNAs selected for analysis.
 Plots of GSEA results log10-pvalue as a function of enrichment score for each conditions
 Plot of GSEA results +/-log10 (p-values) of one condition as a function of the other condition.  
 
+### `Main_1b_Supp_6_GSEA_Efficacy.R`
+GSEA analysis using both conserved and non-conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS < -0.5, -0.4, -0.3, -0.2,-0.1 or  <= 0 with Pearson correlations and log2 scale for miRNA and mRNA expressions. 
+
+Outputs:
+Table of results from GSEA analysis for all miRNAs selected for analysis.
+Plots of GSEA results log10-pvalue as a function of enrichment score.
+Plots of standard deviation of miRNA expression in log2 scale as a function of mean miRNA expression in log2 scale, colorized according to GSEA results.
+
 ### `Supp_1_GSEA_miR-26a-5p.R` 
 GSEA analysis of hsa-miR-26a-5p using different conditions on targets selection with Pearson correlation and log2 scale for miRNA and mRNA expression. 
 
@@ -53,13 +61,6 @@ Table of results from GSEA analysis for all miRNAs selected for analysis.
 Plots of GSEA results log10-pvalue as a function of enrichment score.
 Plots of standard deviation of miRNA expression in log2 scale as a function of mean miRNA expression in log2 scale, colorized according to GSEA results.
 
-### `Supp_6_GSEA_Efficacy.R`
-GSEA analysis using both conserved and non-conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS < -0.5, -0.4, -0.3, -0.2,-0.1 or  <= 0 with Pearson correlations and log2 scale for miRNA and mRNA expressions. 
-
-Outputs:
-Table of results from GSEA analysis for all miRNAs selected for analysis.
-Plots of GSEA results log10-pvalue as a function of enrichment score.
-Plots of standard deviation of miRNA expression in log2 scale as a function of mean miRNA expression in log2 scale, colorized according to GSEA results.
 
 ### `Supp_7_Simulation_Correlation_miRNA_targets.R`
 Simulation of the repression of a miRNA on its mRNA targets for different expression levels of the mRNA, with noise restricted to sampling one. miRNA expression follows a normal distribution with mean =1 and sd =0.1. miRNA repression efficacy was set between 0.2 and 0.002. We have set the mRNA level of expression before repression to obtain an average expression after miRNA repression between -7 and 8 (log2 (RPKM expression)). For each miRNA efficacy and each mRNA mean, we ran 1000 replicates. After repression of mRNAs, we applied a Poisson law on mRNA counts to model the uncertainty due to sampling, and then computed Pearson correlations and corresponding p-values.
