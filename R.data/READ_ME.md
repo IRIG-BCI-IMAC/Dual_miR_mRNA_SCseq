@@ -19,4 +19,4 @@ https://www.targetscan.org/vert_80/vert_80_data_download/miR_Family_Info.txt.zip
 https://www.targetscan.org/vert_71/vert_71_data_download/miR_Family_Info.txt.zip
 
 For all TargetScan data, only information relating to human has been kept.
-This selection was made using the function targetscan2rds in the Functions.R file. 
+This selection was made using the function `targetscan2rds` in the `Functions.R` file. 
