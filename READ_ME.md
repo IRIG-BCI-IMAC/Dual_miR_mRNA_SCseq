@@ -24,11 +24,19 @@ Table of results from GSEA analysis for all miRNAs selected for analysis.
 Plots of GSEA results log10-pvalue as a function of enrichment score.  
 Plots of standard deviation of miRNA expression in log2 scale as a function of mean miRNA expression in log2 scale, colorized according to GSEA results.
 
-### `Supp_1_GSEA_miR-26a-5p.R` 
-GSEA analysis of hsa-miR-26a-5p using different conditions on targets selection with Pearson correlation and log2 scale for miRNA and mRNA expression. 
+### `Supp_1_KS_distribution_correlations.R` 
+Kolmogorov-Smirnov test, Cummulative distribution function and density distribution fonction for miR-92a-3p, miR-26a-5p, miR-125a-5p and let-7i-5p. 
+KS test is performed for targets with mean(log2(RPKM expression)) > 4 and with either all non targets genes for H0 or non targets genes after selection on expression using the same threshold as for targets. The density distribution function is plot for the 4 miRNAs for non targets genes only and using -7, 0, 4 or 8 as threshold on expression to select genes.
 
 Output:  
-GSEA plots from GSEA analysis of hsa-miR-26a-5p using different conditions of targets selection. 
+Plots of cummulative distribution function for miR-92a-3p, miR-26a-5p, miR-125a-5p and let-7i-5p, with KS test
+Plots of density distribution function for miR-92a-3p, miR-26a-5p, miR-125a-5p and let-7i-5p.
+
+### `Supp_1i_GSEA_H0.R` 
+GSEA analysis using both conserved and non-conserved targets, threshold on targets expression >  4 RPKM in log2 scale and TCS <= 0. With either all non targets genes used as H0 (Null hypothesis) or genes selected if their mean log2 expressio is above 4 RPKM for H0.  
+
+Output:  
+Plot of GSEA +/-log10 (p-values) of one condition as a function of the other condition.  
 
 ### `Supp_2a_b_P-values_simulations.R`
 GSEA analysis and Kolmogorov-Smirnov test on simulated genes and sets of targets for different number of used targets.
@@ -105,7 +113,14 @@ Table of results from GSEA analysis and KS tests for all miRNAs selected for ana
 Plots of GSEA and KS test results log10-pvalue as a function of enrichment score or D (compute with a sign).  
 Plot of GSEA and KS results +/-log10 (p-values) of one condition as a function of the other condition.  
 
-### `Supp_10_GSEA_Scale.R`
+### `Supp_10_GSEA_miR-92a-3p_correlation.R`
+Use GSEA results from Main_1a_Supp_4_GSEA_Conservation.R in the conditions with both conserved and non conserved targets, thrshold on targets expression > 4 and TCS <= 0 and compute the correlations of expression between all miRNAs and miR-92a-3p 
+
+Outputs:
+Plot of GSEA results by correlation between the expression of miRNAs and miR-92a-3p 
+
+
+### `Supp_11_GSEA_Scale.R`
 GSEA analysis using both conserved and non-conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS <= 0 with Pearson correlations. Using either log2 scale for miRNA and mRNA expressions or linear scale. 
 
 Outputs:  
@@ -114,7 +129,7 @@ Plots of GSEA results log10-pvalue as a function of enrichment score.
 Plot of GSEA results +/-log10 (p-values) of one condition as a function of the other condition.    
 Plots of standard deviation of miRNA expression in log2 scale as a function of mean miRNA expression in log2 scale, colorized according to GSEA results.
 
-### `Supp_11_GSEA_Correlation.R`
+### `Supp_12_GSEA_Correlation.R`
 GSEA analysis using both conserved and non-conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS <= 0. Using either Pearson coefficient for computing correlations between miRNA expression and mRNA expression or Spearman coefficient and log2 scale for miRNA and mRNA expression. 
 
 Outputs:  
