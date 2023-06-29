@@ -6,7 +6,7 @@
 ###########################################################################
 
 ## Importation ------------------------------------------------------------
-source("Functions.R")# functions importation
+source('Functions.R')# functions importation
 
 ## Data importation -------------------------------------------------------
 ## TargetScan v7.1 data importation 
@@ -20,9 +20,7 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
 ###########################################################################
@@ -37,7 +35,7 @@ list_miRNA <- all_miRNAs [-which(all_miRNAs %in%
 
 conserv <-'both' 
 exp <- 4
-param_efficacy <- seq (-0.5, 0, 0.1)
+param_efficacy <- seq(-0.5,0,0.1)
 
 ## Create file
 name_wb <- 'Efficacy results'
@@ -64,7 +62,8 @@ for (efficacy in param_efficacy){
     mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
     
     res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
-                      selection='TCS', threshold = efficacy)
+                      selection='TCS', threshold = efficacy,
+                      H0 = 'selected')
     
     vec_result <- c(miRNA, mean_interest[[1]], res)
     
@@ -145,7 +144,7 @@ text(x = 1:nb_sheet,
 ###########################################################################
 ## Plots: Efficacy thresholds ----------------------------------------------
 ###########################################################################
-file_output <- "R.results/Supp_6_GSEA_Efficacy_plot.pdf"
+file_output <- "R.results/Supp_7_GSEA_Efficacy_plot.pdf"
 pdf(file_output, width = 6.5, height = 5)
 
 BH = TRUE 
@@ -196,8 +195,8 @@ for (x in 1:nb_sheet){
   
   
   p <- as.numeric(table[,5])
-  ES<- as.numeric(table[,6])
- 
+  ES <- as.numeric(table[,6])
+  
   
   ## process p-value and ES
   vec_colors <- p_value_process(p, ES, BH = BH)[[2]]
@@ -219,13 +218,13 @@ for (x in 1:nb_sheet){
   plot (ES,log10_p, 
         pch = c(rep(19,10), rep (4,length(ES)-10)), 
         col = vec_colors, cex.axis = ind_cex, cex.main = ind_cex,
-        ylim = c(-27,1), xlim = c(-0.7,0.7),
+        ylim = c(-17,1), xlim = c(-0.6,0.6),
         main = paste(sheet_names[x],
                      "\n mean nb of targets =", round(vec_mean[x])) ,
         ylab = ylab.name)
   addTextLabels(ES[signiftop10 ],log10_p[signiftop10 ], 
                 label = miRNA_names[signiftop10 ], 
-                col.label = "black", cex.label = ind_cex)
+                col.label = "black")
   grid()
   lines (x = c(par('usr')[1],par('usr')[2]), 
          y = c(log10(0.05),log10(0.05)), 
@@ -247,13 +246,12 @@ for (x in 1:nb_sheet){
 dev.off()
 
 
+###########################################################################
+## Plot figure 1b sd by mean ----------------------------------------------
+file_output3 <- "R.results/Main_1b_GSEA_sd_by_mean.pdf"
+pdf(file_output3)
 
 
-
-###########################################################################
-###########################################################################
-## Visualize using sd by mean graph ---------------------------------------
-###########################################################################
 
 ## Reduce dataset to interesting miRNAs
 data_miRNA <- data_miRNA_19[which(rownames(data_miRNA_19) %in% 
@@ -265,65 +263,6 @@ mean_miR <- apply(df_miR, 1, mean)
 sd_miR <- apply(df_miR, 1, sd)
 
 
-line_col1 <- rgb(0, 0.6, 0.4,0.4)
-line_col2 <- rgb(1, 0.8, 0, 0.5)
-
-
-file_output2 <-"R.results/GSEA_Efficacy_sd_by_mean.pdf"
-pdf(file_output2)
-
-BH = TRUE 
-
-for (x in 1:nb_sheet){
-  table <- 
-    as.data.frame(
-      read_excel(file_stored_table, x))
-  
-  p <- as.numeric(table[,5])
-  ES <- as.numeric(table[,6])
-  
-  ## process p-value and ES
-  vec_colors <- p_value_process(p, ES, BH = BH)[[2]]
-  log10_p <- p_value_process(p, ES, BH = BH)[[1]]
-  
-  ## identify significant miRNAs
-  signif <- which(vec_colors != 'grey')
-  signiftop10 <- which (which(miRNA_names %in% top10) %in% signif)
-  
-  
-  ## axis title
-  if (BH == TRUE){
-    ylab.name <- expression (paste ('log10 (',p[BH],')')) 
-  } else {
-    ylab.name <- paste ('log10 (p-value)')
-  }
-  
-  plot (mean_miR, sd_miR, 
-        main = paste('Sd by mean 
-      colored with results from',sheet_names[x]),
-        xlim = c(-13,0), 
-        pch = c(rep(19,10), rep(4,length(ES)-10)),
-        col = vec_colors,
-        #main = 'miRNA expression variability across 19 single cells',
-        xlab = 'Mean log2 (miRNA expression)', 
-        ylab = 'SD log2 (miRNA expression)')
-  panel.smooth(mean_miR, sd_miR, col = NULL, col.smooth = line_col2)
-  
-  interest <- signif [which (signif < 30)]
-  addTextLabels(mean_miR[interest],sd_miR[interest], 
-                label = miRNA_names[interest], 
-                col.label = vec_colors[interest])
-  
-  
-}
-
-dev.off()
-
-
-###########################################################################
-## Plot figure 1b alone  --------------------------------------------------
-file_output3 <- "R.results/Figure_1b_GSEA_Efficacy_sd_by_mean.pdf"
-pdf(file_output3)
 
 BH = TRUE 
 
@@ -331,26 +270,29 @@ x <- 6
 table <- 
   as.data.frame(
     read_excel(file_stored_table, x))
-  
+
 p <- as.numeric(table[,5])
 ES <- as.numeric(table[,6])
-  
+
 ## process p-value and ES
 vec_colors <- p_value_process(p, ES, BH = BH)[[2]]
 log10_p <- p_value_process(p, ES, BH = BH)[[1]]
-  
+
 ## identify significant miRNAs
 signif <- which(vec_colors != 'grey')
 signiftop10 <- which (which(miRNA_names %in% top10) %in% signif)
-  
-  
+
+miR2highlight <- c('miR-92a-3p','miR-25-3p','miR-30d-5p',
+                   'miR-182-5p','miR-27b-3p','miR-125a-5p','miR-26a-5p')
+signif <- which(miRNA_names %in% miR2highlight)
+
 ## axis title
 if (BH == TRUE){
   ylab.name <- expression (paste ('log10 (',p[BH],')')) 
 } else {
   ylab.name <- paste ('log10 (p-value)')
 }
-  
+
 plot (mean_miR, sd_miR, 
       main = paste('Sd by mean 
       colored with results from',sheet_names[x]),
@@ -361,12 +303,14 @@ plot (mean_miR, sd_miR,
       xlab = 'Mean log2 (miRNA expression)', 
       ylab = 'SD log2 (miRNA expression)')
 panel.smooth(mean_miR, sd_miR, col = NULL, col.smooth = line_col2)
-  
-interest <- signif [which (signif < 30)]
-addTextLabels(mean_miR[interest],sd_miR[interest], 
-              label = miRNA_names[interest], 
-              col.label = vec_colors[interest])
+
+vec_colors[which(vec_colors == 'grey')] <- 'black'
+addTextLabels(mean_miR[signif],sd_miR[signif], 
+              label = miRNA_names[signif], 
+              col.label = vec_colors[signif])
 
 dev.off()
+
+
 
 
