@@ -22,9 +22,7 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
 ###########################################################################
@@ -62,7 +60,7 @@ print (paste ("PARAMETERS : ", conserv, exp, efficacy))
 
 
 ## Beginning of the loop
-for (miRNA in list_miRNA[1:2]){
+for (miRNA in list_miRNA){
   print(miRNA)
   mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
   
@@ -155,7 +153,7 @@ text(x = 1:nb_sheet,
 ## Plot: Negative Control -------------------------------------------------
 ###########################################################################
 if(choice == 'article'){
-  file_output <- paste("R.results/Supp_8b_GSEA_Negative_Control_",
+  file_output <- paste("R.results/Supp_9b_GSEA_Negative_Control_",
                 choice,"_plot.pdf", sep = '')
 } else (
   file_output <- paste("R.results/GSEA_Negative_Control_",
