@@ -21,10 +21,7 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
-
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 ###########################################################################
 ## Compute GSEA H0 table ------------------------------------------
@@ -193,15 +190,16 @@ par(mfrow=c(1,1))
 plot (ES_H0all,log10_p_H0all, 
       pch = c(rep(19,10), rep(4,length(log10_p_H0all)-10)), 
       col = vec_colors_H0all, 
-      main = paste('log10(p-value) by ES for', sheet_names[1]))
+      main = paste('log10(p-value) by ES for', sheet_names[1]),
+      xlab ='ES', ylab ='Log10(p-value)')
 grid ()
 abline(h = log10(0.05), col=line_col1)
 abline(v = 0, col=line_col1)
 signif <- which(vec_colors_H0all != 'grey')
-addTextLabels(ES_H0all[signif],log10_p_H0all[signif], 
-              label = miRNA_names[signif], 
-              col.label = ifelse (miRNA_names[signif] %in% top10, 
-                                  'black', 'grey'))
+top10_signif <- signif[signif < 11]
+addTextLabels(ES_H0all[top10_signif],log10_p_H0all[top10_signif], 
+              label = miRNA_names[top10_signif], 
+              col.label = 'black')
 
 
 ###########################################################################
@@ -242,7 +240,7 @@ addTextLabels(ES_H0selected[signif],log10_p_H0selected[signif],
 ###########################################################################
 ## Plot H0 all VS H0selected -----------------------------------------------
 ###########################################################################
-file_output <- paste('R.results/Supp_1i_GSEA_H0.pdf', sep ='')
+file_output <- paste('R.results/Supp_8_GSEA_H0.pdf', sep ='')
 pdf(file_output)
 
 
@@ -254,11 +252,11 @@ sign_p_H0selected <- p_value_process(p_H0selected,ES_H0selected,
 
 ## axis title
 if (BH == TRUE){
-  ylab.name <- expression (paste ('+/- log10 (',p[BH],') - H0 all')) 
-  xlab.name <- expression (paste (' +/-log10 (',p[BH],') - H0 selected'))
+  ylab.name <- expression (paste ('+/- log10 (',p[BH],') - biased H0')) 
+  xlab.name <- expression (paste (' +/-log10 (',p[BH],') - unbiased H0'))
 } else {
-  ylab.name <- paste ('+/-log10 (p-value) - H0 all')
-  xlab.name <- paste ('+/-log10 (p-value) - H0 selected')
+  ylab.name <- paste ('+/-log10 (p-value) - biased H0')
+  xlab.name <- paste ('+/-log10 (p-value) - unbiased H0')
 }
 
 
@@ -303,3 +301,5 @@ print(length(vec_colors_H0selected[which(vec_colors_H0selected %in%
 
 
 dev.off()
+
+
