@@ -30,9 +30,7 @@ mean_mRNAs <- apply(data_RNA_19, 1,
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
 ###########################################################################
@@ -219,7 +217,7 @@ hist(nb_miRNA, breaks = 15)
 ## Plot ------------------------------------------------------------------
 ###########################################################################
 if (choice == 'article'){
-  file_output <- paste('R.results/Supp_8a_histogram_jaccard_',
+  file_output <- paste('R.results/Supp_9a_histogram_jaccard_',
                        jaccard_choice,'_',
                        choice,'.pdf', sep ="")
 }else {
@@ -456,7 +454,7 @@ dev.off()
 
 ## plot correlation between log10(p-value) and jaccard index core targets
 
-file_output3 <- 'R.results/Supp_8c_Correlation_p-value_jaccard_core.pdf'
+file_output3 <- 'R.results/Supp_9c_Correlation_p-value_jaccard_core.pdf'
 pdf(file_output3, width = 7, height = 7)
 
 plot (vec_jaccard_core, log10_p_red, pch = 4,
