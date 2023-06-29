@@ -20,9 +20,8 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+
 
 ###########################################################################
 ## Compute GSEA and KS test table -----------------------------------------
@@ -57,24 +56,24 @@ if (choice == 'article'){
 ## Results preparation 
 colnames_mat <- c('miRNA','mean','targets', 'H0', 'pvalue', 'ES')
 matrix_result <- t(as.matrix(colnames_mat))
-  
+
 print ("######################")
 print (paste ("PARAMETERS : ", conserv, exp, efficacy))
+
+
+## Beginging of the loop
+for (miRNA in list_miRNA){
   
+  mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
   
-  ## Beginging of the loop
-  for (miRNA in list_miRNA){
-    
-    mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
-    
-    res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
-                      selection='TCS', threshold = efficacy)
-    
-    vec_result <- c(miRNA, mean_interest[[1]], res)
-    
-    matrix_result <- rbind(matrix_result, vec_result)
-  }
+  res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
+                    selection='TCS', threshold = efficacy, H0 ='selected')
   
+  vec_result <- c(miRNA, mean_interest[[1]], res)
+  
+  matrix_result <- rbind(matrix_result, vec_result)
+}
+
 ## use first line as column names
 results <- renamecols (matrix_result)
 results
@@ -100,24 +99,24 @@ saveWorkbook(wb, file_table, overwrite = TRUE)
 ## Results preparation 
 colnames_mat <- c('miRNA','mean','targets', 'H0', 'pvalue', 'ES')
 matrix_result <- t(as.matrix(colnames_mat))
-  
+
 print ("######################")
 print (paste ("PARAMETERS : ", conserv, exp, efficacy))
-  
-  
+
+
 ## Beginning of the loop
 for (miRNA in list_miRNA){
-    
+  
   mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
-    
+  
   res <- KS_test(miRNA, conservation = conserv, thr_exp = exp,
-                      selection='TCS', threshold = efficacy)
-    
+                 selection='TCS', threshold = efficacy)
+  
   vec_result <- c(miRNA,mean_interest[[1]],res)
-    
+  
   matrix_result <- rbind(matrix_result, vec_result)
 }
-  
+
 ## use first line as column names
 results <- renamecols (matrix_result)
 results
@@ -249,7 +248,7 @@ addTextLabels(D_KS[signif],log10_p_KS[signif],
 ## Plot GSEA VS KS test ---------------------------------------------------
 ###########################################################################
 if (choice == 'final'){
-  file_output <- paste('R.results/Supp_9_GSEA_vs_KS_',choice,'_plot.pdf', sep ='')
+  file_output <- paste('R.results/Supp_10_GSEA_vs_KS_',choice,'_plot.pdf', sep ='')
 }else {
   file_output <- paste('R.results/GSEA_vs_KS_',choice,'_plot.pdf', sep ='')
 }
@@ -257,7 +256,7 @@ pdf(file_output)
 
 sign_p_GSEA <- p_value_process(p_GSEA,ES_GSEA, 
                                BH = BH, double_sign = TRUE)[[1]]
-sign_p_KS <- p_value_process(p_KS,D_KS, 
+sign_p_KS <- -p_value_process(p_KS,D_KS, 
                              BH = BH, double_sign = TRUE)[[1]]
 
 
@@ -272,7 +271,7 @@ if (BH == TRUE){
 
 plot (sign_p_KS,sign_p_GSEA, col = vec_colors_GSEA,
       pch = c(rep(19,10), rep(4,length(sign_p_GSEA)-10)),
-      xlim = c(-27,17), ylim = c(-27,17),
+      xlim = c(-17,13), ylim = c(-17,13),
       lwd = 2, cex = 1.2,
       ylab= ylab.name, xlab= xlab.name,
       main = paste('Results KS vs GSEA\n',
@@ -291,6 +290,7 @@ abline(v = c(0, thr_p, -thr_p), col = colors, lwd = 2)
 abline(a = 0, b = 1, col = line_col2,lwd = 1)     
 addTextLabels(sign_p_KS[signiftop10], sign_p_GSEA[signiftop10], 
               label = miRNA_names[signiftop10], col.label = 'black')
+identify(sign_p_KS, sign_p_GSEA, label = miRNA_names )
 
 ## miR signif with GSEA
 print(length(vec_colors_GSEA[which(vec_colors_GSEA %in% 
