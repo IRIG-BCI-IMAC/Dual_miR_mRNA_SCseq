@@ -27,9 +27,8 @@ length(highly_genes)
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+
 
 ###########################################################################
 ## Compute number of predicted targets ------------------------------------
@@ -37,7 +36,7 @@ list_miRNA <- all_miRNAs [-which(all_miRNAs %in%
 
 
 ## Select only highly expressed genes or all genes 
-highly <- FALSE  #'FALSE' for all or 'TRUE' for highly
+highly <- FALSE #'FALSE' for all or 'TRUE' for highly
 
 if (highly == TRUE){
   mean_mRNAs <- apply(data_RNA_19, 1, 
@@ -128,15 +127,13 @@ choice <- 'conserved'   # order by 'conserved' or  'both'
 ###########################################################################
 
 ## xaxis labels
-highlight <- c(str_remove(all_miRNAs[1:10],"hsa-"))
+highlight <- c(str_remove(list_miRNA[1:10],"hsa-"))
 names_miRNAs <- c()
 for (name in colnames(data_res)){
   new_name <- ifelse(name %in% highlight, name, '')
   names_miRNAs <- c(names_miRNAs, new_name)
 }
 names_miRNAs
-names_miRNAs[59] <- names_miRNAs[57]  
-names_miRNAs[57] <- "" 
 
 ## Save plot
 if (highly == FALSE){
