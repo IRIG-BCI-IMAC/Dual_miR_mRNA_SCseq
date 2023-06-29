@@ -21,10 +21,7 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
-
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 ###########################################################################
 ## Compute GSEA Conservation table ----------------------------------------
@@ -35,7 +32,7 @@ list_miRNA <- all_miRNAs [-which(all_miRNAs %in%
 ## with Expression > 4 RPKM ans TCS < -0.1
 
 ## Parameters definition
-conservation <- c('both', 'conserved') 
+conservation <- c('both', 'conserved')
 exp <- 4
 efficacy <- -0.1
 
@@ -46,40 +43,41 @@ wb <- createWorkbook(name_wb)
 saveWorkbook(wb, file_table, overwrite = FALSE)
 
 for (conserv in conservation){
-
+  
+  
+  ## Results preparation 
+  colnames_mat <- c('miRNA','mean','targets', 'H0', 'pvalue', 'ES')
+  matrix_result <- t(as.matrix(colnames_mat))
+  
+  print ("######################")
+  print (paste ("PARAMETERS : ", conserv, exp, efficacy))
+  
+  
+  ## Beginging of the loop
+  for (miRNA in list_miRNA){
+    print(miRNA)
+    mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
     
-    ## Results preparation 
-    colnames_mat <- c('miRNA','mean','targets', 'H0', 'pvalue', 'ES')
-    matrix_result <- t(as.matrix(colnames_mat))
+    res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
+                      selection = 'TCS', threshold = efficacy,
+                      H0 = 'selected')
     
-    print ("######################")
-    print (paste ("PARAMETERS : ", conserv, exp, efficacy))
+    vec_result <- c(miRNA, mean_interest[[1]], res)
     
-    
-    ## Beginging of the loop
-    for (miRNA in list_miRNA){
-      print(miRNA)
-      mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
-      
-      res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
-                        selection='TCS', threshold = efficacy)
-      
-      vec_result <- c(miRNA, mean_interest[[1]], res)
-      
-      matrix_result <- rbind(matrix_result, vec_result)
-    }
-    
-    ## use first line as column names
-    results <- renamecols (matrix_result)
-    results
-    
-    ## Write in xlsx file
-    sheet <- paste("GSEA", conserv, exp, efficacy)
-    wb <- loadWorkbook(file_table)
-    addWorksheet(wb, sheet)
-    writeData(wb, sheet, results)
-    saveWorkbook(wb, file_table, overwrite = TRUE)
+    matrix_result <- rbind(matrix_result, vec_result)
   }
+  
+  ## use first line as column names
+  results <- renamecols (matrix_result)
+  results
+  
+  ## Write in xlsx file
+  sheet <- paste("GSEA", conserv, exp, efficacy)
+  wb <- loadWorkbook(file_table)
+  addWorksheet(wb, sheet)
+  writeData(wb, sheet, results)
+  saveWorkbook(wb, file_table, overwrite = TRUE)
+}
 
 ## remove the empty sheet
 wb <- loadWorkbook(file_table)
@@ -206,7 +204,7 @@ for (x in 1:nb_sheet){
   signif <- which(vec_colors != 'grey')
   signiftop10 <- which (which(miRNA_names %in% top10) %in% signif)
   
-
+  
   
   ## axis title
   if (BH == TRUE){
@@ -219,10 +217,10 @@ for (x in 1:nb_sheet){
   plot (ES_res,log10_p, 
         pch = c(rep(19,10), rep(4,length(ES)-10)),
         col = vec_colors,
-        ylim = c(-27,0), xlim = c(-0.6,0.6),
+        ylim = c(-17,0), xlim = c(-0.6,0.6),
         main = paste(sheet_names[x],
                      "\n mean number of targets =", round(vec_mean[x])) ,
-        ylab = ylab.name)
+        ylab = ylab.name, xlab ='ES')
   addTextLabels(ES_res[signiftop10],log10_p[signiftop10], 
                 label = miRNA_names[signiftop10], col.label = "black")
   grid()
@@ -329,7 +327,7 @@ addTextLabels(ES_cons[signif],log10_p_cons[signif],
 ## Plot Both VS Conserved targets -----------------------------------------
 ###########################################################################
 
-file_output2 <- 'R.results/Figure_1a_GSEA_Conserved_vs_Both_plot.pdf'
+file_output2 <- 'R.results/Main_1_GSEA_Conserved_vs_Both.pdf'
 pdf(file_output2)
 ## Plot Both vs Conserved ----
 sign_p_both <- p_value_process(p_both,ES_both, BH = BH, 
@@ -337,10 +335,11 @@ sign_p_both <- p_value_process(p_both,ES_both, BH = BH,
 sign_p_cons <- p_value_process(p_cons,ES_cons, BH = BH, 
                                double_sign = TRUE)[[1]]
 
+colors <- c('grey',line_col1,line_col1)
 ## axis title
 if (BH == TRUE){
   ylab.name <- expression (paste ('+/- log10 (',p[BH],
-                          ') - Both conserved and non conserved targets')) 
+                                  ') - Both conserved and non conserved targets')) 
   xlab.name <- expression (paste ('+/- log10 (',p[BH],
                                   ') - Conserved targets'))
 } else {
@@ -349,31 +348,37 @@ if (BH == TRUE){
   xlab.name <- paste ('+/- log10 (p-value) - Conserved targets')
 }
 
-plot (sign_p_cons,sign_p_both, col = vec_colors_both,
+
+plot(1,1, type ='n',
+     xlim = c(-13,13), ylim = c(-13,13),
+     ylab = ylab.name, xlab = xlab.name, 
+     main = 'Condition both vs conserved\nexpression > 4 and TCS < -0.1')
+
+thr_p <- log10(0.05)
+abline(h = c(0, thr_p, -thr_p), col = colors, lwd = 2)
+abline(v = c(0, thr_p, -thr_p), col = colors, lwd = 2)
+abline(a = 0, b = 1, col = line_col2,lwd = 1)  
+grid()
+points (sign_p_cons,sign_p_both, col = vec_colors_both,
       pch = c(rep(19,10), rep(4,length(sign_p_both)-10)),
-      xlim = c(-26,13), ylim = c(-26,13),
-      lwd = 2, cex = 1.2,
-      ylab = ylab.name,
-      xlab = xlab.name, 
-      main = 'Condition both vs conserved\nexpression > 4 and TCS < -0.1')
+      lwd = 2, cex = 1.2)
+
 
 signif_cons <-  which(vec_colors_cons != 'grey')
 signif_both <- which(vec_colors_both != "grey") 
-signif <- unique(c(signif_cons, signif_both[which(signif_both < 11)]))
+#signif <- unique(c(signif_cons, signif_both[which(signif_both < 11)]))
+
+miR2highlight <- c('miR-92a-3p','miR-25-3p','miR-30d-5p',
+                     'miR-182-5p','miR-27b-3p','miR-125a-5p','miR-26a-5p')
+signif <- which(miRNA_names %in% miR2highlight)
 
 
-grid()
-thr_p <- log10(0.05)
-colors <- c('grey',line_col1,line_col1)
-abline(h = c(0, thr_p, -thr_p), col = colors, lwd = 2)
-abline(v = c(0, thr_p, -thr_p), col = colors, lwd = 2)
-abline(a = 0, b = 1, col = line_col2,lwd = 1)     
+   
 addTextLabels(sign_p_cons[signif],sign_p_both[signif], 
               label = miRNA_names[signif], 
               col.label ='black')
 legend(x='topleft', legend = c('top 10 most expressed microRNAs',
                                'Others microRNAs'),
-       col = 'black', pch =c(19,4))
+       col = 'black', pch =c(19,4), cex = 0.8)
 
 dev.off()
-
