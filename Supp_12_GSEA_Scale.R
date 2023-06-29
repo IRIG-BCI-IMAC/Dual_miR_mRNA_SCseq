@@ -20,10 +20,7 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
-
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
 ###########################################################################
@@ -48,7 +45,7 @@ for (miRNA in list_miRNA){
   mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
     
   res <- apply_GSEA(miRNA, conservation = 'both', thr_exp = 4,
-                      selection='all', threshold = 0)
+                      selection='all', threshold = 0, scale ='log2')
     
   vec_result <- c(miRNA, mean_interest[[1]], res)
     
@@ -87,8 +84,8 @@ for (miRNA in list_miRNA){
   print(miRNA)
   mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
     
-  res <- apply_GSEA_linear(miRNA, conservation = 'both', thr_exp = 4,
-                    selection='all', threshold = 0)
+  res <- apply_GSEA(miRNA, conservation = 'both', thr_exp = 4,
+                    selection='all', threshold = 0, scale = 'linear')
     
   vec_result <- c(miRNA, mean_interest[[1]], res)
     
@@ -229,12 +226,11 @@ addTextLabels(ES_linear[signif],log10_p_linear[signif],
                                   'black', 'grey'))
 
 
-
 ###########################################################################
 ## Plot log2 VS linear ----------------------------------------------------
 ###########################################################################
 
-file_output <- 'R.results/Supp_10_GSEA_Scale_plot.pdf'
+file_output <- 'R.results/Supp_12_GSEA_Scale_plot.pdf'
 pdf(file_output)
 
 sign_p_log2 <- p_value_process(p_log2,ES_log2, 
@@ -254,7 +250,7 @@ if (BH == TRUE){
 
 plot (sign_p_linear,sign_p_log2, col = vec_colors_log2,
       pch = c(rep(19,10), rep(4,length(sign_p_log2)-10)),
-      xlim = c(-27,17), ylim = c(-27,17),
+      xlim = c(-17,13), ylim = c(-17,13),
       lwd = 2, cex = 1.2,
       ylab= ylab.name, xlab= xlab.name,
       main = paste('Results linear vs log2
@@ -286,6 +282,8 @@ print(length(vec_colors_linear[which(vec_colors_linear %in%
                                        c('#33ccff','#000099') )])) # blue
 print(length(vec_colors_linear[which(vec_colors_linear %in% 
                                        c('#DA261F','#69100D') )])) # red
+#identify(sign_p_linear,sign_p_log2, 
+         #label = miRNA_names)
 
 
 dev.off()
