@@ -21,9 +21,8 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+
 genes <- rownames(data_RNA_19)
 
 
@@ -46,7 +45,7 @@ colnames(mat_cor_92) <- c('miRNA_names','corr')
 
 ###########################################################################
 ## Load GSEA Expression table
-file_stored_table <- "R.results/GSEA_Efficacy_table_H0selected.xlsx"
+file_stored_table <- "R.results/GSEA_Efficacy_table.xlsx"
 sheet_names <- excel_sheets(path = file_stored_table)
 
 
@@ -111,7 +110,7 @@ ES <- as.numeric(table[,6])
 ###########################################################################
 ## Plot GSEA results by correlation with miR-92
 
-file_output <-"R.results/Supp_10_GSEA_Expression_by_cor_92.pdf"
+file_output <-"R.results/Supp_11_GSEA_Expression_by_cor_92.pdf"
 pdf(file_output, width = 7.5, height = 7.5)
 BH = TRUE 
 
@@ -188,3 +187,4 @@ print(length(vec_colors
 
 
 dev.off()
+
