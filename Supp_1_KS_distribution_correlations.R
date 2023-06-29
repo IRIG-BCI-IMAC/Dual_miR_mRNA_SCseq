@@ -25,9 +25,8 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+
 
 
 hist(mean_miRNAs)
@@ -103,12 +102,12 @@ for (miRNA in list_miRNA[c(1,7,9,13)]){
   ks_high_H0 <- ks.test(corr_H0_high, corr_high_targets)
   
   ## Plot
-  plot(CDF_high_tar[[1]], CDF_high_tar[[2]] , type ='l', col ='red', 
+  plot(CDF_high_tar[[1]], CDF_high_tar[[2]] , type = 'l', col = 'red', lwd = 2, 
        main = name_legend,
-       xlab =paste('Correlation with', name_legend), 
-       ylab ='Cummulatide distribution',
-       xlim = c(-0.8, 0.8), xaxt ='n')
-  axis (1, at =c(-0.8,-0.5,0,0.5,0.8))
+       xlab = paste('Correlation with', name_legend), 
+       ylab ='Cumulative distribution',
+       xlim = c(-0.8, 0.8), xaxt = 'n')
+  axis (1, at = c(-0.8,-0.5,0,0.5,0.8))
   lines(CDF_moderate_tar[[1]], CDF_moderate_tar[[2]], type ='l',col ='green', lwd = 2)
   lines(CDF_weak_tar[[1]], CDF_weak_tar[[2]],type ='l', col ='cyan', lwd = 2)
   lines(CDF_H0_weak[[1]], CDF_H0_weak[[2]], type ='l', col = 'darkblue', lwd = 2, lty =5)
@@ -117,12 +116,12 @@ for (miRNA in list_miRNA[c(1,7,9,13)]){
   
   legend (x ='bottomright', col = c('red','green','cyan','red4','darkgreen','darkblue'),
           bty ='n',  lty = c (1,1,1,5,5,5),
-          legend = c(paste0('Targets exp > 4 (n =',length(corr_high_targets),')'),
-                     paste0('Targets 0 < exp <= 4 (n =',length(corr_moderate_targets),')'),
-                     paste0('Targets exp <= 0 (n =',length(corr_weak_targets),')'),
-                     paste0('Non targets exp > 4 (n =',length(corr_H0_high),')'),
-                     paste0('Non targets exp > 0 (n =',length(corr_H0_moderate),')'),
-                     paste0('Non targets exp > -7 (n =',length(corr_H0_weak),')')))
+          legend = c(paste0('Targets exp > 4 (n = ',length(corr_high_targets),')'),
+                     paste0('Targets 0 < exp <= 4 (n = ',length(corr_moderate_targets),')'),
+                     paste0('Targets exp <= 0 (n = ',length(corr_weak_targets),')'),
+                     paste0('Non targets exp > 4 (n = ',length(corr_H0_high),')'),
+                     paste0('Non targets exp > 0 (n = ',length(corr_H0_moderate),')'),
+                     paste0('Non targets exp > -7 (n = ',length(corr_H0_weak),')')))
   
   legend (x ='topleft', fill = c('darkblue', 'red4'), bty ='n',
           legend = c(paste('p =',signif(ks_H0_weak$p.value,3)),
@@ -187,3 +186,5 @@ for (miRNA in list_miRNA[c(1,7,9,13)]){
 }
 
 dev.off()
+
+
