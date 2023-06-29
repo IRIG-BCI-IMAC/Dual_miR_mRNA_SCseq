@@ -20,15 +20,12 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
-
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
 
 ###########################################################################
-## Compute GSEA Correlation table -----------------------------------------
+## Compute GSEA Correlation table ------------------------------------------
 ###########################################################################
 
 ###########################################################################
@@ -56,7 +53,7 @@ for (miRNA in list_miRNA){
   mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
   
   res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
-                    selection='all', threshold = efficacy)
+                    selection='all', threshold = efficacy, H0 ='selected')
   
   vec_result <- c(miRNA, mean_interest[[1]], res)
   
@@ -96,7 +93,7 @@ for (miRNA in list_miRNA){
   
   res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
                     selection='all', threshold = efficacy, 
-                    spearman = TRUE)
+                    spearman = TRUE, H0 ='selected')
   
   vec_result <- c(miRNA, mean_interest[[1]], res)
   
@@ -243,7 +240,7 @@ addTextLabels(ES_spearman[signif],log10_p_spearman[signif],
 ###########################################################################
 ## Plot Pearson VS Spearman -----------------------------------------------
 ###########################################################################
-file_output <- paste('R.results/Supp_11_GSEA_Correlation_plot.pdf', sep ='')
+file_output <- paste('R.results/Supp_13_GSEA_Correlation_plot.pdf', sep ='')
 pdf(file_output)
 
 
@@ -264,7 +261,7 @@ if (BH == TRUE){
 
 plot (sign_p_spearman,sign_p_pearson, col = vec_colors_pearson,
       pch = c(rep(19,10), rep(4,length(sign_p_pearson)-10)),
-      xlim = c(-30,20), ylim = c(-30,20),
+      xlim = c(-17,13), ylim = c(-17,13),
       lwd = 2, cex = 1.2,
       ylab= ylab.name, xlab= xlab.name,
       main = 
@@ -302,70 +299,3 @@ print(length(vec_colors_spearman[which(vec_colors_spearman %in%
 dev.off()
 
 
-
-###########################################################################
-## Visualize using sd by mean graph ---------------------------------------
-###########################################################################
-
-## Reduce dataset to interesting miRNAs
-data_miRNA <- data_miRNA_19[which(rownames(data_miRNA_19) %in% 
-                                    list_miRNA),]
-df_miR <- data_miRNA[order(-apply(data_miRNA, 1, mean)),]
-
-## Compute mean and sd 
-mean_miR <- apply(df_miR, 1, mean)
-sd_miR <- apply(df_miR, 1, sd)
-
-
-line_col1 <- rgb(0, 0.6, 0.4,0.4)
-line_col2 <- rgb(1, 0.8, 0, 0.5)
-
-file_output2 <-"R.results/GSEA_Correlation_sd_by_mean.pdf"
-pdf(file_output2)
-
-BH = TRUE 
-
-for (x in 1:nb_sheet){
-  table <- 
-    as.data.frame(
-      read_excel(file_stored_table, x))
-  
-  p <- as.numeric(table[,5])
-  ES <- as.numeric(table[,6])
-  
-  ## process p-value and ES
-  vec_colors <- p_value_process(p, ES, BH = BH)[[2]]
-  log10_p <- p_value_process(p, ES, BH = BH)[[1]]
-  
-  ## identify significant miRNAs
-  signif <- which(vec_colors != 'grey')
-  signiftop10 <- which (which(miRNA_names %in% top10) %in% signif)
-  
-  
-  ## axis title
-  if (BH == TRUE){
-    ylab.name <- expression (paste ('log10 (',p[BH],')')) 
-  } else {
-    ylab.name <- paste ('log10 (p-value)')
-  }
-  
-  plot (mean_miR, sd_miR, 
-        main = paste('Sd by mean 
-      colored with results from',sheet_names[x]),
-        xlim = c(-13,0), 
-        pch = c(rep(19,10), rep(4,length(ES)-10)),
-        col = vec_colors,
-        #main = 'miRNA expression variability across 19 single cells',
-        xlab = 'Mean log2 (miRNA expression)', 
-        ylab = 'SD log2 (miRNA expression)')
-  panel.smooth(mean_miR, sd_miR, col = NULL, col.smooth = line_col2)
-  
-  interest <- signif [which (signif < 30)]
-  addTextLabels(mean_miR[interest],sd_miR[interest], 
-                label = miRNA_names[interest], 
-                col.label = vec_colors[interest])
-  
-  
-}
-
-dev.off()
