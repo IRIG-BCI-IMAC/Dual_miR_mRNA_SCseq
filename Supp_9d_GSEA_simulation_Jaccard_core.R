@@ -1,9 +1,9 @@
 ###########################################################################
 ## Script for Matter Arising 
 ## Simulation for negative control with miR-92a-3p
-## Generated sets of 588 targets 
+## Generated sets of 570 targets 
 ## With different Jaccard index with miR-92a-3p core targets
-## Apply GSEA with miR-9éa-3p expression for 100 replicates
+## Apply GSEA with miR-92a-3p expression for 100 replicates
 ###########################################################################
 
 set.seed(0)
@@ -32,10 +32,7 @@ mean_mRNAs <- apply(data_RNA_19, 1,
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],
-                         decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13], decreasing = TRUE))
 
 
 ###########################################################################
@@ -326,8 +323,8 @@ saveWorkbook(wb, file_table, overwrite = TRUE)
 
 ###########################################################################
 ## Load GSEA Negative Control table 
-file_stored_table <-  paste('R.results/GSEA_simulation_core_'
-                            ,choice,'_table.xlsx', sep ='')
+file_stored_table <-  paste('R.results/GSEA_simulation_core_100_seed_',
+                            choice,'_table.xlsx', sep ='')
 sheet_names <- excel_sheets(path = file_stored_table)
 
 
@@ -399,7 +396,7 @@ data_table <- data.frame(jaccard,log10_p)
 
 
 ## Boxplot
-file_output <- 'R.results/Supp_8d_Boxplot_p-value_GSEA_simu.pdf'
+file_output <- 'R.results/Supp_9d_Boxplot_p-value_GSEA_simu.pdf'
 pdf(file_output, width = 7.5, height = 6)
 boxplot(data_table$log10_p ~ data_table$jaccard ,
         xlab = 'Jaccard index',
