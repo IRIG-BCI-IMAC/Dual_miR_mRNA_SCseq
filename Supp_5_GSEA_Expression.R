@@ -1,8 +1,8 @@
 ###########################################################################
-## Script for Matter Arising
-## GSEA analysis to study the parameters of targets expression
+## GSEA analysis to study the threshold to selected genes
 ## Parameters : Conservation = both
-## Expression = -7, -4, 0, 4, 6 or 8  and TCS < -0.1
+## Expression = -7, -4, 0, 4, 6 or 8  and TCS  <= 0
+## H0 = non targets with expression > threshold 
 ###########################################################################
 
 ## Importation ------------------------------------------------------------
@@ -20,9 +20,7 @@ data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]]
 
 ## Sort miRNAs by mean expression 
 mean_miRNAs <- apply(data_miRNA_19,1,mean)
-all_miRNAs <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-list_miRNA <- all_miRNAs [-which(all_miRNAs %in% 
-                                   c("hsa-miR-183-5p","hsa-miR-140-3p"))]
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
 ###########################################################################
@@ -37,7 +35,7 @@ param_exp <- c(8,6,4,0,-4,-7)
 efficacy <- -0.1
 
 ## Create file
-file_table <- 'R.results/GSEA_Expression_table.xlsx'
+file_table <- 'R.results/GSEA_Expresion_table.xlsx'
 name_wb <- 'Expression results'
 wb <- createWorkbook(name_wb)
 saveWorkbook(wb, file_table, overwrite = FALSE)
@@ -59,7 +57,7 @@ for (exp in param_exp){
     mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
     
     res <- apply_GSEA(miRNA, conservation = conserv, thr_exp = exp,
-                      selection='TCS', threshold = efficacy)
+                      selection='TCS', threshold = efficacy, H0='selected' )
     
     vec_result <- c(miRNA, mean_interest[[1]], res)
     
@@ -69,7 +67,7 @@ for (exp in param_exp){
   ## use first line as column names
   results <- renamecols (matrix_result)
   results
-
+  
   
   ## Write in xlsx file
   sheet <- paste("GSEA", conserv ,exp, efficacy)
@@ -77,7 +75,7 @@ for (exp in param_exp){
   addWorksheet(wb, sheet)
   writeData(wb, sheet, results)
   saveWorkbook(wb, file_table, overwrite = TRUE)
-    
+  
 }
 
 ## delete the first sheet
@@ -94,7 +92,7 @@ saveWorkbook(wb, file_table, overwrite = TRUE)
 
 ###########################################################################
 ## Load GSEA Expression table
-file_stored_table <- "R.results/GSEA_Expression_table.xlsx"
+file_stored_table <- 'R.results/GSEA_Expresion_table.xlsx'
 sheet_names <- excel_sheets(path = file_stored_table)
 
 
@@ -204,8 +202,9 @@ for (x in 1:nb_sheet){
   
   signif <- which(vec_colors != 'grey')
   signiftop10 <- which (which(miRNA_names %in% top10) %in% signif)
+  high_signif <- which(vec_colors %in% c('#000099','#69100D','#33ccff') )
   
-  
+  to_show <- unique(c(signiftop10))
   ## axis title
   if (BH == TRUE){
     ylab.name <- expression (paste ('log10 (',p[BH],')')) 
@@ -217,12 +216,12 @@ for (x in 1:nb_sheet){
   plot (ES,log10_p, 
         pch = c(rep(19,10), rep(4,length(ES)-10)),
         col = vec_colors,
-        ylim = c(-27,0), xlim = c(-0.6,0.6),
+        ylim = c(-17,0), xlim = c(-0.6,0.6),
         main = paste(sheet_names[x],
                      "\n mean number of targets =", round(vec_mean[x])) ,
         ylab = ylab.name)
-  addTextLabels(ES[signiftop10],log10_p[signiftop10], 
-                label = miRNA_names[signiftop10], col.label = "black")
+  addTextLabels(ES[to_show],log10_p[to_show], 
+                label = miRNA_names[to_show], col.label = "black")
   grid()
   lines (x = c(par('usr')[1],par('usr')[2]), 
          y = c(log10(0.05),log10(0.05)), col = 'lightblue', lty =2)
