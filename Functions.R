@@ -1,5 +1,5 @@
 ###########################################################################
-## Function file for Matter Arising
+## Function file 
 ## Contain functions called in other scripts
 ###########################################################################
 
@@ -59,7 +59,7 @@ library("readxl") # read table file
 library("dplyr") # to use the arrange function
 library("clusterProfiler")# to apply GSEA
 library("enrichplot")# to visualize GSEA plot 
-library("ggplot2") # top plot results
+library("ggplot2") # to plot results
 library("gridExtra")# to apply grid function on graph
 library("openxlsx") # to write on xlsx file
 library("RColorBrewer") # to use palette 
@@ -125,10 +125,10 @@ import_SCdata <- function(){
   to_be_del <- which(count_NA > 5)
   data_RNA_19_reduce_1 <- data_RNA_19[-to_be_del,]
   
-  ## Apply a minimal expression level at 10e-3
-  data_RNA_19_reduce_1[data_RNA_19_reduce_1 < 10e-3 ] <- 10e-3
+  ## Apply a minimal expression level at 1e-2
+  data_RNA_19_reduce_1[data_RNA_19_reduce_1 < 0.01 ] <- 0.01
   
-  ## Delete mRNAs with all values == 10e-3
+  ## Delete mRNAs with all values == 1e-2
   no_exp <- c()
   for (x in 1:dim(data_RNA_19_reduce_1)[1]){
     line <- data_RNA_19_reduce_1[x,]
@@ -151,6 +151,10 @@ import_SCdata <- function(){
                                 == 'hsa-miR-101-3p')] <- 'hsa-miR-101-3p.1'
   rownames(data_miRNA_19)[which(rownames(data_miRNA_19) 
                                 == 'hsa-miR-126-3p')] <- 'hsa-miR-126-3p.1'
+  rownames(data_miRNA_19)[which(rownames(data_miRNA_19) 
+                                == 'hsa-miR-183-5p')] <- 'hsa-miR-183-5p.1'
+  rownames(data_miRNA_19)[which(rownames(data_miRNA_19) 
+                                == 'hsa-miR-140-3p')] <- 'hsa-miR-140-3p.2'
   
   data_RNA_19_reduce <- log2(data_RNA_19_reduce)
   
@@ -251,7 +255,6 @@ targetscan2rds <- function (){
     
   }
 }
-
 
 ###########################################################################
 ###########################################################################
@@ -369,16 +372,30 @@ targets_selection <- function (miRNA='hsa-miR-92a-3p', conservation='both',
 ## parameters to choose targets conditions of selection 
 ###########################################################################
 apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
-                        conservation='both', thr_exp=-4,
+                        conservation='both', thr_exp=4,
                         selection='all', threshold=0, display=FALSE, 
-                        spearman=FALSE){
+                        spearman=FALSE, H0='selected', scale ='log2'){
   
   
   ## level of expression of mRNAs
+  if (scale == 'log2'){
   mean_mRNAs <- apply(data_RNA_19, 1, 
                       function(x) mean(x, na.rm = TRUE)) 
+  }
   
+  if (scale == 'linear'){
+    
+    ## Single-cell data importation reload in linear
+    data_imported <- import_SCdata()
+    data_RNA_19 <- 2^data_imported[[1]] ; data_miRNA_19 <- 2^data_imported[[2]] 
+    
+    ## level of expression of mRNAs
+    mean_mRNAs <- apply(log2(data_RNA_19), 1, 
+                        function(x) mean(x, na.rm = TRUE)) 
+    
+  }
   
+  ## selected genes which RPKM > threshold of expression
   selected_genes <- names(mean_mRNAs)[which(mean_mRNAs > thr_exp)]
   
   ##  miRNA information ----
@@ -386,7 +403,7 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
   interest_miRNA <- data_miRNA_19[ind_miRNA,]
   SD_interet <- sd(interest_miRNA)
   
-  
+
   ## Targets Selection ----------------------------------------------------
   if (is.null(miRNA_for_targets)){
     Target_mir <- targets_selection(miRNA, 
@@ -411,7 +428,7 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
   
   df_TERM2GENE <- as.data.frame(cbind(vec_legend, used_targets))
   
-  ## Delete unselected targets from the dataset ---------------------------
+  ## Compute all targets for the miR with no conditions ----
   if (is.null(miRNA_for_targets)){
     all_targets <- targets_selection(miRNA, conservation = 'both',
                                      selection = 'all')
@@ -421,12 +438,23 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
                                      selection = 'all')  
   }
   
-  
-  
-  
+  ## Prepare to delete unselected targets ----
   unselected_targets <- all_targets[-which(all_targets %in% used_targets)]
   
-  to_be_del <- which(rownames(data_RNA_19) %in% unselected_targets)
+  if(H0 == 'all'){
+    to_be_del <- which(rownames(data_RNA_19) %in% unselected_targets)
+  }
+  if (H0 == 'selected'){
+    unselected_genes <- names(mean_mRNAs)[-which(names(mean_mRNAs) %in% selected_genes)]
+    print('###')
+    print(length(selected_genes))
+    print(length(unselected_genes))
+    to_be_del_gene <- which(rownames(data_RNA_19) %in% unselected_genes)
+    to_be_del_targets <- which(rownames(data_RNA_19) %in% unselected_targets)
+    to_be_del <- unique(c(to_be_del_gene,to_be_del_targets))
+  }
+  
+  ## Delete unused genes (unslected targets and unselcted genes)
   if (length(to_be_del) > 0){
     data_RNA_19_reduce <- data_RNA_19[-to_be_del,]
   }
@@ -434,7 +462,8 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
     data_RNA_19_reduce <- data_RNA_19
   }
   
-  print(dim(data_RNA_19_reduce))
+  
+  print(paste('genes used:',dim(data_RNA_19_reduce)[1]))
   
   
   ## Correlation between the miRNA and mRNAs ------------------------------
@@ -447,7 +476,7 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
   }
   
   corr_miRNA <- t(correlation)
-  len_H0 <- dim(data_RNA_19_reduce)[1]
+  len_H0 <- dim(data_RNA_19_reduce)[1] - len_H1
   ## Build the geneList -----------------------------------------------------
   ## Ranked mRNAs due to correlation coefficient 
   mat_corr_miRNA <- as.data.frame(corr_miRNA)
@@ -457,11 +486,9 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
   geneList <- gene_df$corr_miRNA
   names(geneList) <- rownames(gene_df)
   
-  print( paste('H0 =', length(geneList)))
+  print( paste('H0 =', len_H0))
   
   if (dim(df_TERM2GENE)[1] > 3){
-    
-    
     
     
     ## Apply GSEA -------------------------------------------------------------
@@ -486,7 +513,7 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
                      conservation, thr_exp, threshold,
                      "\nEnrichment Score = ",
                      signif(res_GSEA@result[["enrichmentScore"]], 
-                            digits = 2),
+                            digits = 3),
                      "\nNumber of targets = ", len_H1)
       
       # , 
@@ -515,162 +542,8 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
   return (list(len_H1, len_H0, p,ES, core))
 }
 
-
-
-
-###########################################################################
-###########################################################################
-## Function to apply GSEA on a microRNA -----------------------------------
-## parameters to choose targets conditions of selection 
-###########################################################################
-apply_GSEA_linear <- function (miRNA='hsa-miR-92a-3p', 
-                               miRNA_for_targets=NULL,
-                               conservation='both', 
-                               thr_exp=-4,
-                               selection='all', 
-                               threshold=0, 
-                               display=FALSE, 
-                               spearman=FALSE){
   
   
-  ## Single-cell data importation
-  data_imported <- import_SCdata()
-  data_RNA_19 <- 2^data_imported[[1]] ; data_miRNA_19 <- 2^data_imported[[2]] 
-  
-  ## level of expression of mRNAs
-  mean_mRNAs <- apply(log2(data_RNA_19), 1, 
-                      function(x) mean(x, na.rm = TRUE)) 
-  
-  
-  selected_genes <- names(mean_mRNAs)[which(mean_mRNAs > thr_exp)]
-  
-  ##  miRNA information ----
-  ind_miRNA <- which(rownames(data_miRNA_19) == miRNA)[1]
-  interest_miRNA <- data_miRNA_19[ind_miRNA,]
-  SD_interet <- sd(interest_miRNA)
-  
-  
-  ## Targets Selection ----------------------------------------------------
-  if (is.null(miRNA_for_targets)){
-    Target_mir <- targets_selection(miRNA, 
-                                    conservation = conservation,
-                                    selection = selection, 
-                                    threshold = threshold) 
-  } else {
-    Target_mir <- targets_selection(miRNA_for_targets, 
-                                    conservation = conservation,
-                                    selection = selection, 
-                                    threshold = threshold)  
-  }
-  
-  used_targets <- Target_mir[which(Target_mir %in% selected_genes)]
-  len_H1 <- length(used_targets)
-  print(paste('targets =',len_H1))
-  
-  ## build the TERM2GENE data frame
-  name_legend <- str_replace(miRNA, 'hsa-', '')
-  l <- length(used_targets)
-  vec_legend <- rep(name_legend, l)
-  
-  df_TERM2GENE <- as.data.frame(cbind(vec_legend, used_targets))
-  
-  ## Delete unselected targets from the dataset ---------------------------
-  all_targets <- targets_selection(miRNA, conservation = 'both',
-                                   selection = 'all')
-  
-  len_H0 <- dim(data_RNA_19)[1] - length(which(rownames(data_RNA_19) 
-                                               %in% all_targets))
-  
-  unselected_targets <- all_targets[-which(all_targets %in% used_targets)]
-  
-  to_be_del <- which(rownames(data_RNA_19) %in% unselected_targets)
-  if (length(to_be_del) > 0){
-    data_RNA_19_reduce <- data_RNA_19[-to_be_del,]
-  }
-  if (length(to_be_del) == 0 ){
-    data_RNA_19_reduce <- data_RNA_19
-  }
-  
-  print(dim(data_RNA_19_reduce))
-  
-  
-  ## Correlation between the miRNA and mRNAs ------------------------------
-  if(spearman == TRUE){
-    correlation <- cor(t(interest_miRNA), t(data_RNA_19_reduce), 
-                       method = 'spearman', use = "pairwise.complete.obs")
-  } else {
-    correlation <- cor(t(interest_miRNA), t(data_RNA_19_reduce), 
-                       method = 'pearson', use = "pairwise.complete.obs")
-  }
-  
-  corr_miRNA <- t(correlation)
-  print( paste('H0 =', dim(data_RNA_19_reduce)[1]))
-  ## Build the geneList ---------------------------------------------------
-  ## Ranked mRNAs due to correlation coefficient 
-  mat_corr_miRNA <- as.data.frame(corr_miRNA)
-  colnames(mat_corr_miRNA) <-'corr_miRNA'
-  gene_df <- mat_corr_miRNA %>% mutate(rank = rank(corr_miRNA,  
-                                                   ties.method = "random"))%>%arrange(desc(rank))
-  geneList <- gene_df$corr_miRNA
-  names(geneList) <- rownames(gene_df)
-  
-  print( paste('H0 =', length(gene_list)))
-  
-  if (dim(df_TERM2GENE)[1] > 3){
-    ## Apply GSEA ---------------------------------------------------------
-    res_GSEA <- GSEA(geneList, TERM2GENE = df_TERM2GENE, verbose = TRUE,
-                     pvalueCutoff = 1,maxGSSize = 7000, minGSSize = 3,
-                     by = 'fgsea', nPermSimple = 100000, eps = 1e-30 )
-    
-    
-    ## Print results
-    p <- res_GSEA@result[["pvalue"]]
-    ES <- res_GSEA@result[["enrichmentScore"]]
-    core <- str_split (res_GSEA@result[['core_enrichment']], '/')
-    
-    ## GSEA plot
-    if (length(res_GSEA@result[["enrichmentScore"]]) != 0 
-        & display == TRUE){
-      
-      print('display')
-      title <- paste('GSEA plot for ', name_legend,
-                     ifelse (is.null(miRNA_for_targets),'', 
-                             paste(' with ',miRNA_for_targets, "targets")),
-                     conservation, thr_exp, threshold,
-                     "\nEnrichment Score = ",
-                     signif(res_GSEA@result[["enrichmentScore"]], 
-                            digits = 2),
-                     "\nNumber of targets = ", len_H1)
-      
-      # , 
-      #       '\n',nb_used_targets, ' targets from',
-      #       ifelse(conservation == 'both',
-      #        ' conserved and non conserved',' conserved'),
-      #       ifelse(selection == 'all',
-      #              ' all targets', paste (' and ',selection,' < ',
-      #       threshold)),
-      #       sep = '') 
-      
-      
-      plot <- mygseaplot2(res_GSEA,geneSetID = name_legend,
-                          title = title
-                          , subplots = c(1,2,3))
-      # ,pvalue_table = FALSE 
-      return (plot)
-      
-    }
-  }else {
-    p <- "NA"
-    ES <- "NA"
-    core <- "NA"
-  }
-  
-  return (list(len_H1, len_H0, p,ES, core))
-}
-
-
-
-
 
 
 
@@ -681,7 +554,7 @@ apply_GSEA_linear <- function (miRNA='hsa-miR-92a-3p',
 KS_test <- function (miRNA = "hsa-miR-92a-3p", 
                      conservation = 'both',
                      thr_exp = 4,
-                     selection='all', threshold=0){
+                     selection='all', threshold=-0){
   
   ## miRNAs informations ----
   print(paste('CDF plot for' ,miRNA))
@@ -696,35 +569,32 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
   SD_interet <- sd(interest_miRNA)
   
   
-  ## Select genes
-  genes <- rownames(data_RNA_19)
-  ## Select highly expressed genes
+  ## Select genes which RPKM > threshold of expression
   mean_mRNAs <- apply(data_RNA_19, 1, 
                       function(x) mean(x, na.rm = TRUE)) 
+  
+  selected_genes <- names(mean_mRNAs)[which(mean_mRNAs > thr_exp)]
+  
+
   highly_genes <- names(mean_mRNAs)[which(mean_mRNAs > thr_exp)]
   
   
   ## Targets Selection ----
-  Target_mir<- targets_selection(miRNA, 
+  Target_mir <- targets_selection(miRNA, 
                                  conservation = conservation,
                                  selection = selection, 
                                  threshold = threshold)   
   
   
-  nb_used_targets <- length(which(rownames(data_RNA_19) %in% Target_mir))
-  
-  ind_targets <- which(rownames(data_RNA_19)%in% Target_mir)
-  
-  Targets <- rownames(data_RNA_19)[ind_targets]
+  nb_used_targets <- length(which(Target_mir %in% selected_genes))
+  used_targets <- Target_mir[which (Target_mir%in% selected_genes)]
   
   ## Targets selection without conditions ----
-  Target_mir_all <- targets_selection(miRNA, conservation = 'both',
+  target_mir_all <- targets_selection(miRNA, conservation = 'both',
                                       selection = 'all', threshold = 0)   
   
-  
-  
-  Non_Targets <- rownames(data_RNA_19)[-which(rownames(data_RNA_19) 
-                                              %in% Target_mir_all)]
+  non_targets <- selected_genes[-which(selected_genes 
+                                              %in% target_mir_all)]
   
   
   ## Correlation between the miRNA and mRNAs ---- 
@@ -738,31 +608,28 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
   
   
   ##  H1 Targets mean log2(RPKM) > 4         red
-  vec_targets_highly <- sort(corr_miRNA [which(names(corr_miRNA) 
-                                               %in% highly_genes 
-                                               & names(corr_miRNA) 
-                                               %in% Targets)])
-  len_H1 <- length(vec_targets_highly)
+  corr_targets_selected <- sort(corr_miRNA [which(names(corr_miRNA) %in% used_targets)])
+  len_H1 <- length(corr_targets_selected)
   
   ## H0 Non targets                         dark blue
-  vec_non_targets <- sort(corr_miRNA [which(names(corr_miRNA) 
-                                            %in% Non_Targets)])
-  len_H0 <- length(vec_non_targets)
+  corr_non_targets <- sort(corr_miRNA [which(names(corr_miRNA) 
+                                            %in% non_targets)])
+  len_H0 <- length(corr_non_targets)
   
   if (len_H1 > 0){
     
     ## Cumulative distribution ----
     
-    CDFH1 <- ecdf(vec_targets_highly)
-    CDFH0 <- ecdf(vec_non_targets)
+    CDFH1 <- ecdf(corr_targets_selected)
+    CDFH0 <- ecdf(corr_non_targets)
     
     
     ## Kolmogorov-Smirnov test ----
-    KS1 <- plot_KStest(vec_targets_highly, vec_non_targets)
+    KS1 <- plot_KStest(corr_targets_selected, corr_non_targets)
     p1 <- KS1[1] ; res1 <- KS1[2]
     
     ## the sign of D will be the relative position of vec2 compare to vec1
-    KS <- KStest(vec_non_targets, vec_targets_highly, option ="D")
+    KS <- KStest(corr_targets_selected, corr_non_targets, option ="D")
     D <- KS[2]
     p <- KS[1]
     if (p == 0){
@@ -770,14 +637,12 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
     }
     
     ## Plot ----
-    
-    
     title <-paste('plot for', name_legend, 
                   'predicted targets\nmedian log2(miRNA) = ',
                   median_interet) 
     
     
-    plot(CDFH0, col = 'blue', cex = 0.3,xaxt = 'n', xlim = c(-0.95,0.8),
+    plot(CDFH0, col = 'orange', cex = 0.3,xaxt = 'n', xlim = c(-0.95,0.8),
          main = title,
          ylab ='Cumulative distribution', 
          xlab = paste('Correlation with', name_legend) )
@@ -790,12 +655,12 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
     legend(x = 'topleft', bg = "white", 
            legend = c(paste('Targets highly (n =', len_H1,')'),
                       paste('Non targets (n =', len_H0,')')),
-           fill = c('red', 'blue'))
+           fill = c('red', 'orange'))
     
     legend(x = 'right',
            title = 'Compare to Non targets',
            legend = c(paste(p1, ' ', res1)),
-           fill = c('red', 'orange'))
+           fill = c('red'))
     
     return (c(len_H1, len_H0, p, D))
     
@@ -870,6 +735,30 @@ KStest <- function (vec1, vec2, option ='D'){
 ## Function for difference between CDF ------------------------------------
 ###########################################################################
 decdf <- function(x, vec1, vec2)  ecdf(vec2)(x) - ecdf(vec1)(x)
+
+
+###########################################################################
+###########################################################################
+## Function to build ECDF for graph ---------------------------------------
+###########################################################################
+build_ecdf <- function (vec_correlation){
+  
+  step <- seq(min(vec_correlation),max(vec_correlation),0.01)
+  
+  
+  empy <- c() ## to store empirical distributuion value
+  
+  for (value in step){
+    emp <- length(which(vec_correlation < value))/length(vec_correlation)
+    empy<- c(empy,emp)
+  }
+  
+  step <- c(-1, step, 1)
+  empy <- c(0, empy, 1)
+  
+  return (list(step, empy))
+  
+} 
 
 
 ###########################################################################
