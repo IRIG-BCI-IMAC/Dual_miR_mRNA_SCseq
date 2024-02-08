@@ -6,9 +6,9 @@
 ## Real jaccard index are compare with random expected overlap (H0)
 ###########################################################################
 
-## Importation
-source("Functions.R")# functions importation
 
+## Importation ------------------------------------------------------------
+source("Functions.R")# functions importation
 
 ## Data importation -------------------------------------------------------
 ## TargetScan v7.1 data importation 
@@ -16,20 +16,19 @@ if(!exists('TS'))
   TS <- TargetScan_importation()
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
-
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
-genes <- rownames(data_RNA_19)
+genes <- rownames(data_RNA)
 
 ## level of expression of mRNAs
-mean_mRNAs <- apply(data_RNA_19, 1, 
+mean_mRNAs <- apply(data_RNA, 1, 
                     function(x) mean(x, na.rm = TRUE)) 
 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
@@ -184,9 +183,6 @@ if (jaccard_choice ==  'targets'){
   
 }
 
-
-
-
 ## compute random histogram of percentage of common targets
 
 vec_random_jaccard <- c()
@@ -213,11 +209,32 @@ hist(nb_miRNA, breaks = 15)
 
 
 
+
+length(nb_miRNA)
+vec_jaccard_median <- c()
+
+for (i in seq(1,5800,100)){
+  
+  vec_jaccard_median <- c (vec_jaccard_median , (median(vec_random_jaccard[i: i+99])))
+
+}
+
+
+plot(vec_jaccard, vec_jaccard_median, col =ifelse(vec_jaccard > 0.04, 'red','black'))
+
+
+
+plot(nb_miRNA,vec_jaccard_median, col =ifelse(vec_jaccard > 0.04, 'red','black'))
+
+plot(nb_miRNA,vec_jaccard, col =ifelse(vec_jaccard > 0.04, 'red','black'))
+
+
+
 ###########################################################################
 ## Plot ------------------------------------------------------------------
 ###########################################################################
 if (choice == 'article'){
-  file_output <- paste('R.results/Supp_9a_histogram_jaccard_',
+  file_output <- paste('R.results/Supp_10a_histogram_jaccard_',
                        jaccard_choice,'_',
                        choice,'.pdf', sep ="")
 }else {
@@ -404,63 +421,15 @@ vec_jaccard_core <- as.numeric(mat_reduce[-family,6])
 vec_colors_red[is.na(vec_colors_red)] <- 'grey'
 
 
-###
-file_output2 <- paste('R.results/ Plot_hypothesis_NC_',choice,'.pdf')
-pdf (file_output2, width = 9, height = 8)
-
-
-list_vec <- list(vec_nb_targets, vec_percent_common, vec_jaccard,
-                 vec_percent_core, vec_jaccard_core, log10_p_red)
-
-name_lab <- c('Number of targets',
-              'Common targets %','Jaccard index common targets',
-              'Core targets % ','Jaccard index core targets', 
-              'log10(p-value) Negative Control')
-
-for (i in 1:6){
-  for (j in i:6){
-    
-    if (i != j){
-    print(paste(i,'-',j))
-    
-      ## plot
-      plot (list_vec[[i]], list_vec[[j]], pch = 19,
-            col = vec_colors_red,
-            xlab = name_lab[i],
-            ylab = name_lab[j])  
-      lines (x = c(par('usr')[1],par('usr')[2]), 
-             y = c(log10(0.05),log10(0.05)), col = line_col1, 
-             lty =2, lwd = 3)
-      
-      x_text <- quantile(list_vec[[i]])[2]
-      y_text <- quantile(list_vec[[j]])[2]
-      
-      correlation <- round(cor (list_vec[[i]], list_vec[[j]],
-                                    method = 'pearson'),3)
-      text (x= x_text, y =y_text, label=paste('R =',correlation))
-      
-      Reg <- lm( list_vec[[j]] ~ list_vec[[i]])
-      abline(Reg, col='cyan4')
-      
-    }
-  }
-}
-
-
-dev.off()
-
-
-
-
 ## plot correlation between log10(p-value) and jaccard index core targets
 
-file_output3 <- 'R.results/Supp_9c_Correlation_p-value_jaccard_core.pdf'
-pdf(file_output3, width = 7, height = 7)
+file_output2 <- 'R.results/Supp_10c_Correlation_p-value_jaccard_core.pdf'
+pdf(file_output2, width = 7, height = 7)
 
 plot (vec_jaccard_core, log10_p_red, pch = 4,
       col = vec_colors_red,
-      xlab = name_lab[5],
-      ylab = name_lab[6])  
+      xlab = 'Jaccard index core targets',
+      ylab = 'log10(p-value) Negative Control')  
 lines (x = c(par('usr')[1],par('usr')[2]), 
        y = c(log10(0.05),log10(0.05)), col = line_col1, lty =2, lwd = 3)
 
@@ -478,5 +447,3 @@ addTextLabels(vec_jaccard_core[ind_name], log10_p_red[ind_name],
               label = vec_names[ind_name], col.label = 'black')
 
 dev.off()
-
-
