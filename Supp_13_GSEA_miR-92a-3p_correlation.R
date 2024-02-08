@@ -6,6 +6,7 @@
 ## other miR expression
 ###########################################################################
 
+
 ## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
 
@@ -16,22 +17,24 @@ if(!exists('TS'))
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =T))
+hist(mean_mRNAs)
 
-genes <- rownames(data_RNA_19)
+genes <- rownames(data_RNA)
 
 
 ###########################################################################
 ## Compute Correlation with miR-92a-3p
-exp_92 <- data_miRNA_19[which(rownames(data_miRNA_19) == 'hsa-miR-92a-3p'),]
+exp_92 <- data_miRNA[which(rownames(data_miRNA) == 'hsa-miR-92a-3p'),]
 
 
-used_miRNA_exp <- data_miRNA_19[which(rownames(data_miRNA_19) 
+used_miRNA_exp <- data_miRNA[which(rownames(data_miRNA) 
                                       %in% list_miRNA),]
 
 dim(used_miRNA_exp)
@@ -110,7 +113,7 @@ ES <- as.numeric(table[,6])
 ###########################################################################
 ## Plot GSEA results by correlation with miR-92
 
-file_output <-"R.results/Supp_11_GSEA_Expression_by_cor_92.pdf"
+file_output <-"R.results/Supp_13a_GSEA_Expression_by_cor_92.pdf"
 pdf(file_output, width = 7.5, height = 7.5)
 BH = TRUE 
 
@@ -154,7 +157,7 @@ vec_pch[top10_index] <- 19
 plot (mat_plot$corr,mat_plot$log10_p, 
       pch =vec_pch,
       col = mat_plot$vec_colors , cex =1.8,
-      ylim = c(-17,13), xlim = c(-1,1),
+      ylim = c(-17,17), xlim = c(-1,1),
       main = paste(sheet_names[x],
                    "\n mean number of targets =", round(vec_mean[x])) ,
       ylab = ylab.name, 
@@ -166,9 +169,10 @@ grid()
 abline(h = c(log10(0.05),-log10(0.05)), col = 'seagreen', lty =2)
 abline(v = 0, col = 'seagreen', lty =2, lwd =3)
 
+cor(mat_plot$corr[which(vec_colors != 'grey')],mat_plot$log10_p[which(vec_colors != 'grey')])
 
 ## model for results
-model_fit <- cbind(mat_plot$corr,mat_plot$log10_p)
+model_fit <- cbind(mat_plot$corr[which(vec_colors != 'grey')],mat_plot$log10_p[which(vec_colors != 'grey')])
 r_model <- princomp(model_fit)
 b_model <- r_model$loadings[2,1] / r_model$loadings[1,1]
 a_model <- r_model$center[2] - b_model * r_model$center[1]
@@ -187,4 +191,3 @@ print(length(vec_colors
 
 
 dev.off()
-
