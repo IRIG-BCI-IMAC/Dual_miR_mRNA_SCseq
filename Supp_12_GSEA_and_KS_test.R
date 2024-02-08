@@ -1,11 +1,12 @@
 ###########################################################################
 ## Script for Matter Arising 
-## Comparison of GSEA and Kolmogorov-Smirnov test results
+## Comparison of GSEA, Kolmogorov-Smirnov test and Wilcoxon test results
 ## Parameters: Conserved targets or Both  
 ## Expression > 4 RPKM and TCS < -0.1 or 0
 ###########################################################################
 
-## Importation 
+
+## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
 
 ## Data importation -------------------------------------------------------
@@ -15,20 +16,22 @@ if(!exists('TS'))
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =T))
+hist(mean_mRNAs)
 
 
 ###########################################################################
-## Compute GSEA and KS test table -----------------------------------------
+## Compute GSEA, KS and wilcoxon test table -------------------------------
 ###########################################################################
 
 ###########################################################################
-## Build Table for KS vs GSEA 
+## Build Table for GSEA, KS and Wilcoxon test 
 ## conserved, 4, -0.1
 ## Or both, 4, 0
 
@@ -49,7 +52,8 @@ if (choice == 'article'){
 }
 
 
-
+file_table <- paste('R.results/GSEA_KS_Wilcoxon_test_',
+                    choice,'_table.xlsx', sep ='')
 
 ###########################################################################
 ## Compute GSEA table -----------------------------------------------------
@@ -81,16 +85,12 @@ results
 
 ##########################################################################
 ## Store results 
-file_table <- paste('R.results/GSEA_and_KS_test_',
-                    choice,'_table.xlsx', sep ='')
 name_wb <- " GSEA results"
 sheet <- paste("GSEA", conserv, exp, efficacy)
 wb <- createWorkbook(name_wb)
 addWorksheet(wb, sheet)
 writeData(wb, sheet, results)
 saveWorkbook(wb, file_table, overwrite = TRUE)
-
-
 
 
 ###########################################################################
@@ -112,7 +112,7 @@ for (miRNA in list_miRNA){
   res <- KS_test(miRNA, conservation = conserv, thr_exp = exp,
                  selection='TCS', threshold = efficacy)
   
-  vec_result <- c(miRNA,mean_interest[[1]],res)
+  vec_result <- c(miRNA, mean_interest[[1]], res)
   
   matrix_result <- rbind(matrix_result, vec_result)
 }
@@ -130,14 +130,49 @@ writeData(wb, sheet, results)
 saveWorkbook(wb, file_table, overwrite = TRUE)
 
 
+###########################################################################
+## Compute Wilcoxon test table --------------------------------------------
+
+## Results preparation 
+colnames_mat <- c('miRNA','mean','targets', 'H0', 'pvalue', 'ES')
+matrix_result <- t(as.matrix(colnames_mat))
+
+print ("######################")
+print (paste ("PARAMETERS : ", conserv, exp, efficacy))
+
+
+## Beginning of the loop
+for (miRNA in list_miRNA){
+  
+  mean_interest <- mean_miRNAs[which(names(mean_miRNAs) == miRNA)]
+  
+  res <- wilcoxon_test(miRNA, conservation = conserv, thr_exp = exp,
+                 selection='TCS', threshold = efficacy)
+  
+  vec_result <- c(miRNA, mean_interest[[1]], res)
+  
+  matrix_result <- rbind(matrix_result, vec_result)
+}
+
+## use first line as column names
+results <- renamecols (matrix_result)
+results
+##########################################################################
+## Store results 
+sheet <- paste("Wilcoxon", conserv, exp, efficacy)
+wb <- loadWorkbook(file_table)
+addWorksheet(wb, sheet)
+writeData(wb, sheet, results)
+saveWorkbook(wb, file_table, overwrite = TRUE)
+
 
 ###########################################################################
 ## Plots ------------------------------------------------------------------
 ###########################################################################
 
 ###########################################################################
-## Load GSEA and KS test table
-file_stored_table <- paste('R.results/GSEA_and_KS_test_',choice,'_table.xlsx', sep ='')
+## Load GSEA, KS and Wilcoxon test table
+file_stored_table <- paste('R.results/GSEA_KS_Wilcoxon_test_',choice,'_table.xlsx', sep ='')
 sheet_names <- excel_sheets(path = file_stored_table)
 
 
@@ -184,7 +219,7 @@ text(x = 1:nb_sheet,
 
 
 ###########################################################################
-## Plots: GSEA and KS test ------------------------------------------------
+## Plots: GSEA, KS ad Wilcoxon test ---------------------------------------
 ###########################################################################
 
 BH = TRUE
@@ -243,22 +278,55 @@ addTextLabels(D_KS[signif],log10_p_KS[signif],
               col.label = ifelse (miRNA_names[signif] %in% top10,
                                   'black', 'grey'))
 
+###########################################################################
+## Plot Wilcoxon ----
+## with ES from GSEA 
+table_Wt <- 
+  as.data.frame(
+    read_excel(file_stored_table,3))
+
+p_Wt <- as.numeric(table_Wt[,5])
+
+
+## process p-value and ES
+vec_colors_Wt <- p_value_process(p_Wt, ES_GSEA, BH = BH)[[2]]
+log10_p_Wt <- p_value_process(p_Wt, ES_GSEA, BH = BH)[[1]]
+
+
+## Plot
+par(mfrow=c(1,1))
+plot (ES_GSEA,log10_p_Wt, 
+      pch = c(rep(19,10), rep(4,length(log10_p_Wt)-10)), 
+      col = vec_colors_Wt,
+      main = paste('log10(p-value) by ES of GSEA for', sheet_names[3]))
+signif <- which(vec_colors_Wt != 'grey')
+addTextLabels(ES_GSEA[signif],log10_p_Wt[signif], 
+              label = miRNA_names[signif], 
+              col.label = ifelse (miRNA_names[signif] %in% top10,
+                                  'black', 'grey'))
+
 
 ###########################################################################
 ## Plot GSEA VS KS test ---------------------------------------------------
 ###########################################################################
 if (choice == 'final'){
-  file_output <- paste('R.results/Supp_10_GSEA_vs_KS_',choice,'_plot.pdf', sep ='')
+  file_output <- paste('R.results/Supp_12_GSEA_KS_Wilcoxon_',choice,'_plot.pdf', sep ='')
 }else {
-  file_output <- paste('R.results/GSEA_vs_KS_',choice,'_plot.pdf', sep ='')
+  file_output <- paste('R.results/GSEA_KS_Wilcoxon_',choice,'_plot.pdf', sep ='')
 }
 pdf(file_output)
 
+## prepare p-values
 sign_p_GSEA <- p_value_process(p_GSEA,ES_GSEA, 
                                BH = BH, double_sign = TRUE)[[1]]
 sign_p_KS <- -p_value_process(p_KS,D_KS, 
                              BH = BH, double_sign = TRUE)[[1]]
+sign_p_Wt <- p_value_process(p_Wt,ES_GSEA, 
+                             BH = BH, double_sign = TRUE)[[1]]
 
+## define maxi and mini for axis limits
+mini <- round(min(sign_p_GSEA, sign_p_KS, sign_p_Wt, na.rm =TRUE)) -1
+maxi <- round(max(sign_p_GSEA, sign_p_KS, sign_p_Wt, na.rm =TRUE)) +1
 
 ## axis title
 if (BH == TRUE){
@@ -271,7 +339,7 @@ if (BH == TRUE){
 
 plot (sign_p_KS,sign_p_GSEA, col = vec_colors_GSEA,
       pch = c(rep(19,10), rep(4,length(sign_p_GSEA)-10)),
-      xlim = c(-17,13), ylim = c(-17,13),
+      xlim = c(mini, maxi), ylim = c(mini, maxi),
       lwd = 2, cex = 1.2,
       ylab= ylab.name, xlab= xlab.name,
       main = paste('Results KS vs GSEA\n',
@@ -303,6 +371,56 @@ print(length(vec_colors_GSEA[which(vec_colors_GSEA %in%
 print(length(vec_colors_KS[which(vec_colors_KS %in% 
                                    c('#33ccff','#000099') )])) # blue
 print(length(vec_colors_KS[which(vec_colors_KS %in% 
+                                   c('#DA261F','#69100D') )])) # red
+
+
+###########################################################################
+## Plot GSEA VS Wilcoxon test ---------------------------------------------
+###########################################################################
+
+## axis title
+if (BH == TRUE){
+  ylab.name <- expression (paste ('+/- log10 (',p[BH],') - GSEA')) 
+  xlab.name <- expression (paste (' +/-log10 (',p[BH],') - Wilcoxon'))
+} else {
+  ylab.name <- paste ('+/-log10 (p-value) - GSEA')
+  xlab.name <- paste ('+/-log10 (p-value) - Wilcoxon')
+}
+
+plot (sign_p_Wt,sign_p_GSEA, col = vec_colors_GSEA,
+      pch = c(rep(19,10), rep(4,length(sign_p_GSEA)-10)),
+      xlim = c(mini, maxi), ylim = c(mini, maxi),
+      lwd = 2, cex = 1.2,
+      ylab= ylab.name, xlab= xlab.name,
+      main = paste('Results Wilcoxon vs GSEA\n',
+                   conserv,', Expression >',exp,'and TCS <', efficacy))
+
+signif <-  unique(c(which(vec_colors_GSEA != 'grey'), 
+                    which(vec_colors_Wt != 'grey')))
+signiftop10 <- signif[which(signif < 11)]
+
+
+grid()
+thr_p <- log10(0.05)
+colors <- c('grey',line_col1,line_col1)
+abline(h = c(0, thr_p, -thr_p), col = colors, lwd = 2)
+abline(v = c(0, thr_p, -thr_p), col = colors, lwd = 2)
+abline(a = 0, b = 1, col = line_col2,lwd = 1)     
+addTextLabels(sign_p_Wt[signiftop10], sign_p_GSEA[signiftop10], 
+              label = miRNA_names[signiftop10], col.label = 'black')
+identify(sign_p_Wt, sign_p_GSEA, label = miRNA_names )
+
+## miR signif with GSEA
+print(length(vec_colors_GSEA[which(vec_colors_GSEA %in% 
+                                     c('#33ccff','#000099') )])) # blue
+print(length(vec_colors_GSEA[which(vec_colors_GSEA %in% 
+                                     c('#DA261F','#69100D') )])) # red
+
+
+## miR signif with Wilcoxon
+print(length(vec_colors_Wt[which(vec_colors_Wt %in% 
+                                   c('#33ccff','#000099') )])) # blue
+print(length(vec_colors_Wt[which(vec_colors_Wt %in% 
                                    c('#DA261F','#69100D') )])) # red
 
 
