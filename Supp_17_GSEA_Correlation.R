@@ -5,6 +5,7 @@
 ## Parameters: Both, Expression > 4 RPKM and TCS <= 0
 ###########################################################################
 
+
 ## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
 
@@ -15,13 +16,14 @@ if(!exists('TS'))
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =T))
+hist(mean_mRNAs)
 
 
 ###########################################################################
@@ -240,7 +242,7 @@ addTextLabels(ES_spearman[signif],log10_p_spearman[signif],
 ###########################################################################
 ## Plot Pearson VS Spearman -----------------------------------------------
 ###########################################################################
-file_output <- paste('R.results/Supp_13_GSEA_Correlation_plot.pdf', sep ='')
+file_output <- paste('R.results/Supp_17_GSEA_Correlation_plot.pdf', sep ='')
 pdf(file_output)
 
 
@@ -259,9 +261,14 @@ if (BH == TRUE){
   xlab.name <- paste ('+/-log10 (p-value) - spearman')
 }
 
+
+mini <- min(sign_p_spearman,sign_p_pearson)
+maxi <- max(sign_p_spearman,sign_p_pearson)
+
+
 plot (sign_p_spearman,sign_p_pearson, col = vec_colors_pearson,
       pch = c(rep(19,10), rep(4,length(sign_p_pearson)-10)),
-      xlim = c(-17,13), ylim = c(-17,13),
+      xlim = c(-17,20), ylim = c(-17,20),
       lwd = 2, cex = 1.2,
       ylab= ylab.name, xlab= xlab.name,
       main = 
@@ -297,5 +304,3 @@ print(length(vec_colors_spearman[which(vec_colors_spearman %in%
 
 
 dev.off()
-
-
