@@ -8,9 +8,8 @@
 
 set.seed(0)
 
-## Importation
+## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
-
 
 ## Data importation -------------------------------------------------------
 ## TargetScan v7.1 data importation 
@@ -18,22 +17,15 @@ if(!exists('TS'))
   TS <- TargetScan_importation()
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
-
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
-
-genes <- rownames(data_RNA_19)
-
-
-## level of expression of mRNAs
-mean_mRNAs <- apply(data_RNA_19, 1, 
-                    function(x) mean(x, na.rm = TRUE)) 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
-list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13], decreasing = TRUE))
-
+mean_miRNAs <- apply(data_miRNA,1,mean)
+list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =T))
+hist(mean_mRNAs)
 
 ###########################################################################
 ## Conditions choice  -----------------------------------------------------
@@ -166,8 +158,8 @@ spearman <- FALSE
 selected_genes <- names(mean_mRNAs)[which(mean_mRNAs > thr_exp)]
 
 ##  miRNA information ----
-ind_miRNA <- which(rownames(data_miRNA_19) == miRNA)[1]
-interest_miRNA <- data_miRNA_19[ind_miRNA,]
+ind_miRNA <- which(rownames(data_miRNA) == miRNA)[1]
+interest_miRNA <- data_miRNA[ind_miRNA,]
 SD_interet <- sd(interest_miRNA)
 
 
@@ -227,29 +219,29 @@ for (len_core in number_core_targets){
       unselected_targets <- 
         targets_92[-which(targets_92 %in% used_targets)]
       
-      to_be_del <- which(rownames(data_RNA_19) %in% unselected_targets)
+      to_be_del <- which(rownames(data_RNA) %in% unselected_targets)
       
       if (length(to_be_del) > 0){
-        data_RNA_19_reduce <- data_RNA_19[-to_be_del,]
+        data_RNA_reduce <- data_RNA[-to_be_del,]
       }
       if (length(to_be_del) == 0 ){
-        data_RNA_19_reduce <- data_RNA_19
+        data_RNA_reduce <- data_RNA
       }
       
-      print(dim(data_RNA_19_reduce))
+      print(dim(data_RNA_reduce))
       
       
       ## Correlation between the miRNA and mRNAs --------------------------
       if(spearman == TRUE){
-        correlation <- cor(t(interest_miRNA), t(data_RNA_19_reduce), 
+        correlation <- cor(t(interest_miRNA), t(data_RNA_reduce), 
                         method = 'spearman', use = "pairwise.complete.obs")
       } else {
-        correlation <- cor(t(interest_miRNA), t(data_RNA_19_reduce), 
+        correlation <- cor(t(interest_miRNA), t(data_RNA_reduce), 
                        method = 'pearson', use = "pairwise.complete.obs")
       }
       
       corr_miRNA <- t(correlation)
-      len_H0 <- dim(data_RNA_19_reduce)[1]
+      len_H0 <- dim(data_RNA_reduce)[1]
       ## Build the geneList -----------------------------------------------
       ## Ranked mRNAs due to correlation coefficient 
       mat_corr_miRNA <- as.data.frame(corr_miRNA)
@@ -396,7 +388,7 @@ data_table <- data.frame(jaccard,log10_p)
 
 
 ## Boxplot
-file_output <- 'R.results/Supp_9d_Boxplot_p-value_GSEA_simu.pdf'
+file_output <- 'R.results/Supp_10d_Boxplot_p-value_GSEA_simu.pdf'
 pdf(file_output, width = 7.5, height = 6)
 boxplot(data_table$log10_p ~ data_table$jaccard ,
         xlab = 'Jaccard index',
@@ -404,6 +396,3 @@ boxplot(data_table$log10_p ~ data_table$jaccard ,
         col = 'lightblue')
 
 dev.off()
-
-
-
