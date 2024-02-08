@@ -7,22 +7,25 @@
 ## or both, expression > 4 and TCS <= 0
 ###########################################################################
 
-## Importation 
+
+## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
 
 ## Data importation -------------------------------------------------------
 ## TargetScan v7.1 data importation 
-if (!exists('TS'))
+if(!exists('TS'))
   TS <- TargetScan_importation()
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =T))
+hist(mean_mRNAs)
 
 
 ###########################################################################
@@ -153,7 +156,7 @@ text(x = 1:nb_sheet,
 ## Plot: Negative Control -------------------------------------------------
 ###########################################################################
 if(choice == 'article'){
-  file_output <- paste("R.results/Supp_9b_GSEA_Negative_Control_",
+  file_output <- paste("R.results/Supp_10b_GSEA_Negative_Control_",
                 choice,"_plot.pdf", sep = '')
 } else (
   file_output <- paste("R.results/GSEA_Negative_Control_",
@@ -193,7 +196,7 @@ if (BH == TRUE){
 plot (ES,log10_p, 
       pch = 4, cex = 1,
       col = vec_colors,
-      ylim = c(-7,0), xlim = c(-0.5,0.5),
+      ylim = c(-7.5,0), xlim = c(-0.5,0.5),
       main = paste("Negative Control",sheet_names[1],
                    "\n mean number of targets =", round(vec_mean[x])) ,
       ylab = ylab.name)
@@ -210,4 +213,3 @@ length(which(vec_colors == 'grey'))
 length(which(!is.na(vec_colors)))
 
 dev.off()
-
