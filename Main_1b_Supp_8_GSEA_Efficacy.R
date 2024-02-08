@@ -5,8 +5,9 @@
 ## and TCS < -0.5, -0..4, -0.3, -0.2, -0.1, 0
 ###########################################################################
 
+
 ## Importation ------------------------------------------------------------
-source('Functions.R')# functions importation
+source("Functions.R")# functions importation
 
 ## Data importation -------------------------------------------------------
 ## TargetScan v7.1 data importation 
@@ -15,13 +16,14 @@ if(!exists('TS'))
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
-
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =T))
+hist(mean_mRNAs)
 
 ###########################################################################
 ## Compute GSEA Efficacy table --------------------------------------------
@@ -144,7 +146,7 @@ text(x = 1:nb_sheet,
 ###########################################################################
 ## Plots: Efficacy thresholds ----------------------------------------------
 ###########################################################################
-file_output <- "R.results/Supp_7_GSEA_Efficacy_plot.pdf"
+file_output <- "R.results/Supp_8_GSEA_Efficacy_plot.pdf"
 pdf(file_output, width = 6.5, height = 5)
 
 BH = TRUE 
@@ -213,12 +215,15 @@ for (x in 1:nb_sheet){
     ylab.name <- paste ('log10 (p-value)')
   }
   
+  mini <- min(ES, na.rm =TRUE)
+  maxi <- max(ES, na.rm =TRUE)
   
+  print(c(mini, maxi))
   
   plot (ES,log10_p, 
         pch = c(rep(19,10), rep (4,length(ES)-10)), 
         col = vec_colors, cex.axis = ind_cex, cex.main = ind_cex,
-        ylim = c(-17,1), xlim = c(-0.6,0.6),
+        ylim = c(-17,1), xlim = c(-0.75,0.75),
         main = paste(sheet_names[x],
                      "\n mean nb of targets =", round(vec_mean[x])) ,
         ylab = ylab.name)
@@ -248,7 +253,7 @@ dev.off()
 
 ###########################################################################
 ## Plot figure 1b sd by mean ----------------------------------------------
-file_output3 <- "R.results/Main_1b_GSEA_sd_by_mean.pdf"
+file_output3 <- "R.results/Main_1c_GSEA_sd_by_mean.pdf"
 pdf(file_output3)
 
 
@@ -296,7 +301,7 @@ if (BH == TRUE){
 plot (mean_miR, sd_miR, 
       main = paste('Sd by mean 
       colored with results from',sheet_names[x]),
-      xlim = c(-13,0), 
+      xlim = c(-13.3,0), 
       pch = c(rep(19,10), rep(4,length(ES)-10)),
       col = vec_colors,
       #main = 'miRNA expression variability across 19 single cells',
@@ -310,7 +315,3 @@ addTextLabels(mean_miR[signif],sd_miR[signif],
               col.label = vec_colors[signif])
 
 dev.off()
-
-
-
-
