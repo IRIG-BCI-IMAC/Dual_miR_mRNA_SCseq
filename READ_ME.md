@@ -88,7 +88,7 @@ Plot of correlations as a function of mean mRNA expression for different miRNA r
 Plot of a targeted mRNA expression as a function of miRNA expression as examples of correlations.   
 
 
-### `Supp_9a_b_GSEA_H0.R` 
+### `Supp_9_GSEA_H0.R` 
 GSEA analysis using both conserved and non-conserved targets, threshold on targets expression > 4 RPKM in log2 scale and TCS <= 0. With either all non targets genes used as H0 (Null hypothesis) or genes selected if their mean log2 expressio is above 4 RPKM for H0, for Wang et al. dataset. Similar script can be used for Xiao et al. dataset.  
 
 Output:  
