@@ -5,28 +5,28 @@
 ## Using all targets or only targets with Expression(log2 scale) > 4 RPKM 
 ###########################################################################
 
-## Importation
+## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
-
 
 ## Data importation -------------------------------------------------------
 ## TargetScan v7.1 data importation 
-if (!exists("TS"))
-  TS <- TargetScan_importation() 
-TargetScan <- TS[[1]] ; families <-TS[[2]]
+if(!exists('TS'))
+  TS <- TargetScan_importation()
+TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
-genes <- rownames(data_RNA_19)
-mean_mRNAs <- apply(data_RNA_19, 1, 
+
+genes <- rownames(data_RNA)
+mean_mRNAs <- apply(data_RNA, 1, 
                     function(x) mean(x, na.rm = TRUE)) 
-highly_genes <- rownames(data_RNA_19[which(mean_mRNAs > 4),])
+highly_genes <- rownames(data_RNA[which(mean_mRNAs > 4),])
 length(highly_genes)
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 
 
@@ -39,9 +39,9 @@ list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 highly <- FALSE #'FALSE' for all or 'TRUE' for highly
 
 if (highly == TRUE){
-  mean_mRNAs <- apply(data_RNA_19, 1, 
+  mean_mRNAs <- apply(data_RNA, 1, 
                       function(x) mean(x, na.rm = TRUE)) 
-  genes <- rownames(data_RNA_19[which(mean_mRNAs > 4),])
+  genes <- rownames(data_RNA[which(mean_mRNAs > 4),])
   length(genes)
   
 }
@@ -171,10 +171,3 @@ legend(x='topleft', fill = c("coral2", "dodgerblue4"),
        legend=c('Non conserved targets', 'Conserved targets'))
 
 dev.off()
-
-
-
-
-
-
-
