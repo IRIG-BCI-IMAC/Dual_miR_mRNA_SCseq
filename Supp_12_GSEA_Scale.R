@@ -5,7 +5,8 @@
 ## Parameters: Both, Expression > 4 RPKM and TCS < 0.1
 ###########################################################################
 
-## Importation 
+
+## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
 
 ## Data importation -------------------------------------------------------
@@ -15,12 +16,14 @@ if(!exists('TS'))
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =T))
+hist(mean_mRNAs)
 
 
 ###########################################################################
@@ -230,7 +233,7 @@ addTextLabels(ES_linear[signif],log10_p_linear[signif],
 ## Plot log2 VS linear ----------------------------------------------------
 ###########################################################################
 
-file_output <- 'R.results/Supp_12_GSEA_Scale_plot.pdf'
+file_output <- 'R.results/Supp_16_GSEA_Scale_plot.pdf'
 pdf(file_output)
 
 sign_p_log2 <- p_value_process(p_log2,ES_log2, 
@@ -287,73 +290,3 @@ print(length(vec_colors_linear[which(vec_colors_linear %in%
 
 
 dev.off()
-
-
-###########################################################################
-###########################################################################
-## Visualize using sd by mean graph ---------------------------------------
-###########################################################################
-
-## Reduce dataset to interesting miRNAs
-data_miRNA <- data_miRNA_19[which(rownames(data_miRNA_19) %in% 
-                                    list_miRNA),]
-df_miR <- data_miRNA[order(-apply(data_miRNA, 1, mean)),]
-
-## Compute mean and sd 
-mean_miR <- apply(df_miR, 1, mean)
-sd_miR <- apply(df_miR, 1, sd)
-
-
-line_col1 <- rgb(0, 0.6, 0.4,0.4)
-line_col2 <- rgb(1, 0.8, 0, 0.5)
-
-file_output2 <- "R.results/GSEA_Scale_sd_by_mean.pdf"
-pdf(file_output2)
-
-BH = TRUE 
-
-for (x in 1:nb_sheet){
-  table <- 
-    as.data.frame(
-      read_excel(file_stored_table, x))
-  
-  p <- as.numeric(table[,5])
-  ES <- as.numeric(table[,6])
-
-  ## process p-value and ES
-  vec_colors <- p_value_process(p, ES, BH = BH)[[2]]
-  log10_p <- p_value_process(p, ES, BH = BH)[[1]]
-  
-  ## identify significant miRNAs
-  signif <- which(vec_colors != 'grey')
-  signiftop10 <- which (which(miRNA_names %in% top10) %in% signif)
-  
-  
-  ## axis title
-  if (BH == TRUE){
-    ylab.name <- expression (paste ('log10 (',p[BH],')')) 
-  } else {
-    ylab.name <- paste ('log10 (p-value)')
-  }
-  
-  plot (mean_miR, sd_miR, 
-        main = paste('Sd by mean 
-      colored with results from',sheet_names[x]),
-        xlim = c(-13,0), 
-        pch = c(rep(19,10), rep(4,length(ES)-10)),
-        col = vec_colors,
-        #main = 'miRNA expression variability across 19 single cells',
-        xlab = 'Mean log2 (miRNA expression)', 
-        ylab = 'SD log2 (miRNA expression)')
-  panel.smooth(mean_miR, sd_miR, col = NULL, col.smooth = line_col2)
-  
-  interest <- signif [which (signif < 30)]
-  addTextLabels(mean_miR[interest],sd_miR[interest], 
-                label = miRNA_names[interest], 
-                col.label = vec_colors[interest])
-  
-  
-}
-
-dev.off()
-
