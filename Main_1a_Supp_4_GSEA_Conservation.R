@@ -16,12 +16,15 @@ if(!exists('TS'))
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =TRUE))
+hist(mean_mRNAs)
+
 
 ###########################################################################
 ## Compute GSEA Conservation table ----------------------------------------
@@ -34,7 +37,7 @@ list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
 ## Parameters definition
 conservation <- c('both', 'conserved')
 exp <- 4
-efficacy <- -0.1
+efficacy <- 0
 
 ## Create file
 file_table <- 'R.results/GSEA_Conservation_table.xlsx'
@@ -213,7 +216,6 @@ for (x in 1:nb_sheet){
     ylab.name <- paste ('log10 (p-value)')
   }
   
-  
   plot (ES_res,log10_p, 
         pch = c(rep(19,10), rep(4,length(ES)-10)),
         col = vec_colors,
@@ -348,11 +350,12 @@ if (BH == TRUE){
   xlab.name <- paste ('+/- log10 (p-value) - Conserved targets')
 }
 
-
+maxi <- round(max(sign_p_cons,sign_p_both))+1
+mini <- round(min(sign_p_cons,sign_p_both))-1
 plot(1,1, type ='n',
-     xlim = c(-13,13), ylim = c(-13,13),
+     xlim = c(mini,maxi), ylim = c(mini,maxi),
      ylab = ylab.name, xlab = xlab.name, 
-     main = 'Condition both vs conserved\nexpression > 4 and TCS < -0.1')
+     main = 'Condition both vs conserved\nexpression > 4 and TCS < 0')
 
 thr_p <- log10(0.05)
 abline(h = c(0, thr_p, -thr_p), col = colors, lwd = 2)
