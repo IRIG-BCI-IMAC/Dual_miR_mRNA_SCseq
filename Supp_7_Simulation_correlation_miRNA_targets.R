@@ -7,7 +7,8 @@
 
 set.seed (0)
 
-source ('Functions.R')
+## Importation ------------------------------------------------------------
+source("Functions.R")# functions importation
 
 nb_cells <- 19
 
@@ -35,9 +36,6 @@ efficacy <- tested_efficacy[i] # miRNA efficacy to repress mRNA targets
 
 repression <- miRNA_exp * efficacy
 repression # repression is proportional to miRNA expression
-
-
-
 
 for(j in 1:length(tae)){
   print(paste('mRNA mean expression =', tae[j]))
@@ -75,7 +73,7 @@ for(j in 1:length(tae)){
   ## print 2 examples of correlations
   if( efficacy %in% c(0.02,0.2) && j == 12 && x == 499){
 
-    file_output1 <- paste('R.results/Supp_6',
+    file_output1 <- paste('R.results/Supp_7',
                           ifelse(efficacy == 0.02,'b','c'),
                           '_correlation_miRNA_targets.pdf', sep = '')
     pdf(file_output1, width = 6.5, height = 6.5)
@@ -89,9 +87,7 @@ for(j in 1:length(tae)){
                                   paste('p-val =', pval)), bty ='n')
     abline(Reg, col='cyan4')
     
-    
-    dev.off()
-    
+    dev.off()    
     
   }
   
@@ -110,7 +106,7 @@ results_mean
 ###########################################################################
 ## plot results correlation by mean mRNA expression
 file_output2 <- 
-  paste('R.results/Supp_6a_Simu_correlation_miRNA_targets.pdf', sep = '')
+  paste('R.results/Supp_7a_Simu_correlation_miRNA_targets.pdf', sep = '')
 pdf(file_output2, width = 8, height = 6.5)
 
 vec_col <- c('black', 'red','blue')
@@ -135,4 +131,3 @@ legend( x ='bottomleft', legend = tested_efficacy, fill = vec_col[1:3],
 
 
 dev.off()
-
