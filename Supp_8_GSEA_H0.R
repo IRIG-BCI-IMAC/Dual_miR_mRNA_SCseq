@@ -5,7 +5,6 @@
 ## Parameters: Both, Expression > 4 RPKM and TCS <= 0
 ###########################################################################
 
-
 ## Importation ------------------------------------------------------------
 source("Functions.R")# functions importation
 
@@ -16,28 +15,27 @@ if(!exists('TS'))
 TargetScan <- TS[[1]] ; families <- TS[[2]]
 
 ## Single-cell data importation
-data_imported <- import_SCdata()
-data_RNA_19 <- data_imported[[1]] ; data_miRNA_19 <- data_imported[[2]] 
+data_RNA <- readRDS("R.Data/data_RNA_19.rds") 
+data_miRNA <- readRDS("R.Data/data_miRNA_19.rds") 
 
 ## Sort miRNAs by mean expression 
-mean_miRNAs <- apply(data_miRNA_19,1,mean)
+mean_miRNAs <- apply(data_miRNA,1,mean)
 list_miRNA <- names(sort(mean_miRNAs[mean_miRNAs > -13],decreasing = TRUE))
+mean_mRNAs <- apply(data_RNA,1,function(x) mean(x, na.rm =TRUE))
+hist(mean_mRNAs)
 
 ###########################################################################
-## Compute GSEA H0 table ------------------------------------------
+## Compute GSEA H0 table --------------------------------------------------
 ###########################################################################
-
-###########################################################################
-## Build Table for GSEA analysis using all genes for H0
 ## With parameters to select targets: both, 4, 0
-
 ## Parameters definition
 conserv <- 'both'
 exp <- 4
 efficacy <- 0
 
-
 ###########################################################################
+###########################################################################
+## Apply GSEA with all genes for H0
 ## Results preparation ----
 colnames_mat <- c('miRNA','mean','targets', 'H0', 'pvalue', 'ES')
 matrix_result <- t(as.matrix(colnames_mat))
@@ -240,7 +238,7 @@ addTextLabels(ES_H0selected[signif],log10_p_H0selected[signif],
 ###########################################################################
 ## Plot H0 all VS H0selected -----------------------------------------------
 ###########################################################################
-file_output <- paste('R.results/Supp_8_GSEA_H0.pdf', sep ='')
+file_output <- paste('R.results/Supp_9a_GSEA_H0.pdf', sep ='')
 pdf(file_output)
 
 
@@ -260,9 +258,11 @@ if (BH == TRUE){
 }
 
 
+mini <- round(min(c(sign_p_H0selected, sign_p_H0all))-1)
+maxi <- round(max(c(sign_p_H0selected, sign_p_H0all))+1)
 
 plot (0,0, type ='n',
-      xlim = c(-18,13), ylim = c(-18,13),
+      xlim = c(mini,maxi), ylim = c(mini,maxi),
       ylab= ylab.name, xlab= xlab.name,
       main = 
         paste('Results H0 selected vs H0 all\n',
@@ -279,7 +279,7 @@ abline(h = c(0, thr_p, -thr_p), col = colors, lwd = 2)
 abline(v = c(0, thr_p, -thr_p), col = colors, lwd = 2)
 abline(a = 0, b = 1, col = line_col2,lwd = 1)     
 
-points (sign_p_H0selected,sign_p_H0all, col = vec_colors_H0selected,
+points (sign_p_H0selected, sign_p_H0all, col = vec_colors_H0selected,
         pch = c(rep(19,10), rep(4,length(sign_p_H0all)-10)), lwd = 2, cex = 1.2,)
 addTextLabels(sign_p_H0selected[signiftop10], sign_p_H0all[signiftop10], 
               label = miRNA_names[signiftop10], col.label = 'black')
@@ -301,5 +301,3 @@ print(length(vec_colors_H0selected[which(vec_colors_H0selected %in%
 
 
 dev.off()
-
-
