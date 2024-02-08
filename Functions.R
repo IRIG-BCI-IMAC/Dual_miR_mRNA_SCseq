@@ -65,112 +65,13 @@ library("openxlsx") # to write on xlsx file
 library("RColorBrewer") # to use palette 
 source("Function_GSEA_plot.R")# to display GSEA plot with annotation
 
-###########################################################################
-###########################################################################
-## Function to import and prepare data ------------------------------------
-## data from Wang et al., 2019 article
-###########################################################################
-data2rds <- function (){
-  
-  ## mRNA data
-  data_RNA <- 
-    read.table("R.Data/GSE114071_NW_K562_RNA_processed.gct", 
-               sep = '\t', skip = 1, header = TRUE)
-  saveRDS (data_RNA, "R.Data/data_mRNA_19.rds")
-  
-  ## miRNA data
-  data_miRNA <- 
-    read.table("R.Data/GSE114071_NW_K562_miRNA_log2.gct", 
-               sep = '\t', header = TRUE )
-  saveRDS (data_miRNA, "R.Data/data_miRNA_19.rds")
-  
-}
-
-###########################################################################
-###########################################################################
-## Function to import and prepare data ------------------------------------
-## from Wang et al., 2019 article
-###########################################################################
-import_SCdata <- function(){
-  
-  ## Single-cell data importation 
-  data_RNA <- readRDS("R.Data/data_mRNA_19.rds")
-  data_miRNA <- readRDS("R.Data/data_miRNA_19.rds")
-  
-  ## Preparation for miRNAs data 
-  library(stringr)
-  names_miRNAs_SC <- data_miRNA$Name
-  data_miRNA$Name <- str_replace(data_miRNA$Name, 'hsa.', '')
-  data_miRNA$Name <- str_replace_all(data_miRNA$Name,
-                                     '[:punct:]', '-')
-  prettier_names_miRNAs_SC <- data_miRNA$Name
-  data_miRNA_19 <- data_miRNA[,c(-1,-2,-22,-23)]
-  
-  
-  ## Preparation for mRNA data
-  row_names <- data_RNA$NAME
-  row_names
-  .rowNamesDF(data_RNA, make.names = TRUE) <- row_names
-  data_RNA$NAME <- NULL
-  data_RNA$Description <- NULL
-  data_RNA_19 <- data_RNA[,c(-6,-21,-22)]
-  
-  ## Rename columns to be the same in the two data set
-  namescol <- colnames(data_miRNA_19)
-  colnames(data_RNA_19) <- namescol
-  
-  
-  ## Delete mRNAs with more than 5 NAs 
-  count_NA <- rowSums(is.na(data_RNA_19))
-  to_be_del <- which(count_NA > 5)
-  data_RNA_19_reduce_1 <- data_RNA_19[-to_be_del,]
-  
-  ## Apply a minimal expression level at 1e-2
-  data_RNA_19_reduce_1[data_RNA_19_reduce_1 < 0.01 ] <- 0.01
-  
-  ## Delete mRNAs with all values == 1e-2
-  no_exp <- c()
-  for (x in 1:dim(data_RNA_19_reduce_1)[1]){
-    line <- data_RNA_19_reduce_1[x,]
-    l <- length(which(line == 0.01))
-    NAS <- length(which(is.na(line)))
-    if (l+NAS==19){
-      no_exp <- c(no_exp, x)
-    }
-  }
-  length(no_exp)
-  data_RNA_19_reduce <- data_RNA_19_reduce_1[-no_exp,]
-  dim(data_RNA_19_reduce)
-  
-  
-  ## keep only one loci for each miRNA
-  data_miRNA_19 <- keep_one_loci(data_miRNA = data_miRNA_19, 
-                                 names_miRNA = names_miRNAs_SC)
-  
-  rownames(data_miRNA_19)[which(rownames(data_miRNA_19) 
-                                == 'hsa-miR-101-3p')] <- 'hsa-miR-101-3p.1'
-  rownames(data_miRNA_19)[which(rownames(data_miRNA_19) 
-                                == 'hsa-miR-126-3p')] <- 'hsa-miR-126-3p.1'
-  rownames(data_miRNA_19)[which(rownames(data_miRNA_19) 
-                                == 'hsa-miR-183-5p')] <- 'hsa-miR-183-5p.1'
-  rownames(data_miRNA_19)[which(rownames(data_miRNA_19) 
-                                == 'hsa-miR-140-3p')] <- 'hsa-miR-140-3p.2'
-  
-  data_RNA_19_reduce <- log2(data_RNA_19_reduce)
-  
-  return (list(data_RNA_19_reduce, data_miRNA_19))
-}
-
-
-
-
 
 ###########################################################################
 ###########################################################################
 ## Function to select only one loci for each miRNA ------------------------
 ## The choosen loci is the one with the higher median 
 ###########################################################################
-keep_one_loci <- function (data_miRNA = data_miRNA_19, 
+keep_one_loci <- function (data_miRNA = data_miRNA, 
                            names_miRNA = names_miRNAs_SC){
   
   ## build results dataframe
@@ -197,6 +98,8 @@ keep_one_loci <- function (data_miRNA = data_miRNA_19,
   return (new_data)
 }
 
+
+
 ###########################################################################
 ###########################################################################
 ## Select human information only from TargetScan files --------------------
@@ -213,13 +116,13 @@ targetscanHuman <- function (){
     
     
     ## Non conserved predictions
-    all <-  read.table (paste("R.data/Summary_Counts.all_predictions",version,".txt", sep =''), 
+    all <-  read.table (paste("R.data/TargetScan/Summary_Counts.all_predictions",version,".txt", sep =''), 
                         sep = '\t',header = TRUE)
     Human_all <- all [which(all$Species.ID == 9606),] 
     
     
     ## Conserved predictions
-    default <-  read.table (paste("R.data/Summary_Counts.default_predictions",version,".txt", sep =''), 
+    default <-  read.table (paste("R.data/TargetScan/Summary_Counts.default_predictions",version,".txt", sep =''), 
                             sep = '\t',header = TRUE)
     Human_default <- default [which(default$Species.ID == 9606),] 
     
@@ -227,9 +130,9 @@ targetscanHuman <- function (){
     ## merge Conserved and Non conserved prediction
     both <- rbind (Human_default, Human_all)
     
-    write.table (Human_families, paste("R.data/Human_miR_Family_Info",version,".txt", sep =''))
+    write.table (Human_families, paste("R.data/TargetScan/Human_miR_Family_Info",version,".txt", sep =''))
     
-    write.table (both, paste("R.data/Human_Summary_Counts.both_predictions",version,".txt", sep =''))
+    write.table (both, paste("R.data/TargetScan/Human_Summary_Counts.both_predictions",version,".txt", sep =''))
     
     
   }
@@ -244,14 +147,14 @@ targetscan2rds <- function (){
     version <- paste ("_",version, sep = '')
     
 
-    name_prediction <- paste ("R.data/Human_Summary_Counts.both_predictions",
+    name_prediction <- paste ("R.data/TargetScan/Human_Summary_Counts.both_predictions",
                               version,".txt", sep ='')
     data_TargetScan <-
       read.table(name_prediction,
                  sep = " ", header = TRUE)
     
     saveRDS(data_TargetScan,
-            file = paste("R.data/target_scan",version,".rds", sep =''))
+            file = paste("R.data/TargetScan/target_scan",version,".rds", sep =''))
     
   }
 }
@@ -270,7 +173,7 @@ TargetScan_importation <- function( version = "7.1"){
   version <- paste ("_",version, sep = '') 
   
   ## TargetScan v8 importation of miRNAs family 
-  name_family <- paste ("R.data/Human_miR_family_Info",version,".txt",
+  name_family <- paste ("R.data/TargetScan/Human_miR_family_Info",version,".txt",
                         sep = '')
   families <- read.table(name_family, sep = " ", header = TRUE)
   
@@ -280,7 +183,7 @@ TargetScan_importation <- function( version = "7.1"){
   message('miRNAs families have been imported ....')
   
   ## TargetScan v8 data importation for conserved and non conserved 
-  name_prediction <- paste ("R.data/target_scan",
+  name_prediction <- paste ("R.data/TargetScan/target_scan",
                             version,".rds", sep ='')
   data_TargetScan <- 
     readRDS(name_prediction)
@@ -307,61 +210,85 @@ TargetScan_importation <- function( version = "7.1"){
 ## Threshold is a numeric variable to apply if selection = 'CWCS' or 'TCS'
 ###########################################################################
 targets_selection <- function (miRNA='hsa-miR-92a-3p', conservation='both',
-                               selection='all', threshold=0){
-  # if (miRNA == 'hsa-miR-140-3p'){
-  #   miRNA <- 'hsa-miR-140-3p.2'
-  # }
-  # if (miRNA == 'hsa-miR-183-5p'){
-  #   miRNA <- 'hsa-miR-183-5p.1'
-  # }
-  ## Conservation selection
-  if (conservation ==  'both' ){
-    data_TargetScan <- TargetScan
-  }else if (conservation == 'conserved'){
-    data_TargetScan <- 
-      TargetScan[which(TargetScan$Total.num.conserved.sites > 0),]
-  }else if (conservation == 'non conserved'){
-    data_TargetScan <- 
-      TargetScan[-which(TargetScan$Total.num.conserved.sites > 0),]
-  }
-  ## find miRNA family 
-  family <- families$Seed.m8[which(families$MiRBase.ID == miRNA)]
+                               selection='all', threshold=0, option = 'online',
+                               ID =FALSE,
+                               site_6mer = FALSE, folder = 'shuffle'){
   
-  ## selection
-  if (selection == 'all'){
-    row_selection <- 
-      data_TargetScan[which(data_TargetScan$miRNA.family == family), ]
-  }else if (selection == 'CWCS'){
+  ## Conservation selection
+  if (option == 'online'){
+    print('Targets from TargetScan online')
     
-    rows <- data_TargetScan[which(data_TargetScan$miRNA.family == family), ]
-    
-    indNA <- which(is.na(rows$Cumulative.weighted.context...score))
-    rows$Cumulative.weighted.context...score[indNA] <- 0
-    
-    if (threshold == 0) {
-      row_selection <- 
-        rows[which(rows$Cumulative.weighted.context...score <= threshold), ]
-    }else {
-      row_selection <- 
-        rows[which(rows$Cumulative.weighted.context...score < threshold), ]
+    if (conservation ==  'both' ){
+      data_TargetScan <- TargetScan
+    }else if (conservation == 'conserved'){
+      data_TargetScan <- 
+        TargetScan[which(TargetScan$Total.num.conserved.sites > 0),]
+    }else if (conservation == 'non conserved'){
+      data_TargetScan <- 
+        TargetScan[-which(TargetScan$Total.num.conserved.sites > 0),]
     }
+    ## find miRNA family 
+    family <- families$Seed.m8[which(families$MiRBase.ID == miRNA)]
     
-    
-  }else if (selection == 'TCS'){
-    
-    rows <- data_TargetScan[which(data_TargetScan$miRNA.family == family), ]
-    indNA <- which(is.na(rows$Total.context...score))
-    rows$Total.context...score[indNA] <- 0
-    if (threshold == 0){
-      row_selection <- rows[which(rows$Total.context...score <= threshold), ]
-    } else {
-      row_selection <- rows[which(rows$Total.context...score < threshold), ]
+    ## selection
+    if (selection == 'all'){
+      row_selection <- 
+        data_TargetScan[which(data_TargetScan$miRNA.family == family), ]
+    }else if (selection == 'CWCS'){
+      
+      rows <- data_TargetScan[which(data_TargetScan$miRNA.family == family), ]
+      
+      indNA <- which(is.na(rows$Cumulative.weighted.context...score))
+      rows$Cumulative.weighted.context...score[indNA] <- 0
+      
+      if (threshold == 0) {
+        row_selection <- 
+          rows[which(rows$Cumulative.weighted.context...score <= threshold), ]
+      }else {
+        row_selection <- 
+          rows[which(rows$Cumulative.weighted.context...score < threshold), ]
+      }
+      
+      
+    }else if (selection == 'TCS'){
+      
+      rows <- data_TargetScan[which(data_TargetScan$miRNA.family == family), ]
+      indNA <- which(is.na(rows$Total.context...score))
+      rows$Total.context...score[indNA] <- 0
+      if (threshold == 0){
+        row_selection <- rows[which(rows$Total.context...score <= threshold), ]
+      } else {
+        row_selection <- rows[which(rows$Total.context...score < threshold), ]
+        
+      }
       
     }
+    if (ID == TRUE){
+      targets_list <- unique(row_selection$Gene.ID.version)
+    } else{
+      targets_list <- unique(row_selection$Gene.Symbol)
+    }
     
+    
+  }else{
+    print('Targets from TargetScan perl')
+    if (length(grep('shuffle', miRNA) > 0)){
+      
+      file_name <- paste0('R.data/Shuffle/targets_', folder,'/perl_', miRNA,'_targets.txt')
+    } else{
+      file_name <- paste0('perl_',miRNA,'_targets.txt')
+    }
+    
+    print(file_name)
+    table_targets <- read.table(file_name, sep ='\t', header = TRUE)
+    if (site_6mer == FALSE){
+      targets_list <- unique(table_targets$a_Gene_ID[-which(table_targets$Site_type == '6mer')])
+    } else{
+      targets_list <- unique(table_targets$a_Gene_ID)
+    }
   }
   
-  return (unique(row_selection$Gene.Symbol))
+  return (targets_list)
   
 }
 
@@ -374,47 +301,51 @@ targets_selection <- function (miRNA='hsa-miR-92a-3p', conservation='both',
 apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
                         conservation='both', thr_exp=4,
                         selection='all', threshold=0, display=FALSE, 
-                        spearman=FALSE, H0='selected', scale ='log2'){
+                        spearman=FALSE, H0='selected', scale ='log', 
+                        ID = FALSE, targets_option = 'online',
+                        site_6mer = FALSE,  folder = 'shuffle'){
   
   
   ## level of expression of mRNAs
-  if (scale == 'log2'){
-  mean_mRNAs <- apply(data_RNA_19, 1, 
-                      function(x) mean(x, na.rm = TRUE)) 
+  if (scale == 'log'){
+    mean_mRNAs <- apply(data_RNA, 1, 
+                        function(x) mean(x, na.rm = TRUE)) 
   }
   
   if (scale == 'linear'){
-    
-    ## Single-cell data importation reload in linear
-    data_imported <- import_SCdata()
-    data_RNA_19 <- 2^data_imported[[1]] ; data_miRNA_19 <- 2^data_imported[[2]] 
-    
-    ## level of expression of mRNAs
-    mean_mRNAs <- apply(log2(data_RNA_19), 1, 
+    mean_mRNAs <- apply(2^(data_RNA), 1, 
                         function(x) mean(x, na.rm = TRUE)) 
     
   }
   
   ## selected genes which RPKM > threshold of expression
   selected_genes <- names(mean_mRNAs)[which(mean_mRNAs > thr_exp)]
-  
+  print(length(selected_genes))
   ##  miRNA information ----
-  ind_miRNA <- which(rownames(data_miRNA_19) == miRNA)[1]
-  interest_miRNA <- data_miRNA_19[ind_miRNA,]
+  ind_miRNA <- which(rownames(data_miRNA) == miRNA)[1]
+  interest_miRNA <- data_miRNA[ind_miRNA,]
   SD_interet <- sd(interest_miRNA)
   
-
+  
   ## Targets Selection ----------------------------------------------------
   if (is.null(miRNA_for_targets)){
     Target_mir <- targets_selection(miRNA, 
                                     conservation = conservation,
                                     selection = selection, 
-                                    threshold = threshold) 
+                                    threshold = threshold, ID = ID,
+                                    option = targets_option,
+                                    site_6mer = site_6mer,
+                                    folder = folder) 
+    
   } else {
     Target_mir <- targets_selection(miRNA_for_targets, 
                                     conservation = conservation,
                                     selection = selection, 
-                                    threshold = threshold)  
+                                    threshold = threshold, ID =ID,
+                                    option = targets_option,
+                                    site_6mer = site_6mer,
+                                    folder = folder)  
+    
   }
   
   used_targets <- Target_mir[which(Target_mir %in% selected_genes)]
@@ -431,58 +362,63 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
   ## Compute all targets for the miR with no conditions ----
   if (is.null(miRNA_for_targets)){
     all_targets <- targets_selection(miRNA, conservation = 'both',
-                                     selection = 'all')
+                                     selection = 'all', ID = ID,
+                                     option = targets_option,
+                                     site_6mer = site_6mer,
+                                     folder = folder)
   } else {
     all_targets <- targets_selection(miRNA_for_targets, 
                                      conservation = 'both',
-                                     selection = 'all')  
+                                     selection = 'all', ID = ID,
+                                     option = targets_option,
+                                     site_6mer = site_6mer,
+                                     folder = folder)  
   }
   
   ## Prepare to delete unselected targets ----
   unselected_targets <- all_targets[-which(all_targets %in% used_targets)]
   
   if(H0 == 'all'){
-    to_be_del <- which(rownames(data_RNA_19) %in% unselected_targets)
+    to_be_del <- which(names(mean_mRNAs) %in% unselected_targets)
   }
   if (H0 == 'selected'){
     unselected_genes <- names(mean_mRNAs)[-which(names(mean_mRNAs) %in% selected_genes)]
     print('###')
     print(length(selected_genes))
     print(length(unselected_genes))
-    to_be_del_gene <- which(rownames(data_RNA_19) %in% unselected_genes)
-    to_be_del_targets <- which(rownames(data_RNA_19) %in% unselected_targets)
+    to_be_del_gene <- which(rownames(data_RNA) %in% unselected_genes)
+    to_be_del_targets <- which(rownames(data_RNA) %in% unselected_targets)
     to_be_del <- unique(c(to_be_del_gene,to_be_del_targets))
   }
   
   ## Delete unused genes (unslected targets and unselcted genes)
   if (length(to_be_del) > 0){
-    data_RNA_19_reduce <- data_RNA_19[-to_be_del,]
+    data_RNA_reduce <- data_RNA[-to_be_del,]
   }
   if (length(to_be_del) == 0 ){
-    data_RNA_19_reduce <- data_RNA_19
+    data_RNA_reduce <- data_RNA
   }
   
   
-  print(paste('genes used:',dim(data_RNA_19_reduce)[1]))
+  print(paste('genes used:',dim(data_RNA_reduce)[1]))
   
   
   ## Correlation between the miRNA and mRNAs ------------------------------
   if(spearman == TRUE){
-    correlation <- cor(t(interest_miRNA), t(data_RNA_19_reduce), 
+    correlation <- cor(t(interest_miRNA), t(data_RNA_reduce), 
                        method = 'spearman', use = "pairwise.complete.obs")
   } else {
-    correlation <- cor(t(interest_miRNA), t(data_RNA_19_reduce), 
+    correlation <- cor(t(interest_miRNA), t(data_RNA_reduce), 
                        method = 'pearson', use = "pairwise.complete.obs")
   }
   
   corr_miRNA <- t(correlation)
-  len_H0 <- dim(data_RNA_19_reduce)[1] - len_H1
+  len_H0 <- dim(data_RNA_reduce)[1] - len_H1
   ## Build the geneList -----------------------------------------------------
   ## Ranked mRNAs due to correlation coefficient 
   mat_corr_miRNA <- as.data.frame(corr_miRNA)
   colnames(mat_corr_miRNA) <-'corr_miRNA'
-  gene_df <- mat_corr_miRNA %>% mutate(rank = rank(corr_miRNA,  
-                                ties.method = "random"))%>%arrange(desc(rank))
+  gene_df <- mat_corr_miRNA[order(mat_corr_miRNA[,1],decreasing=TRUE),1,drop=FALSE]
   geneList <- gene_df$corr_miRNA
   names(geneList) <- rownames(gene_df)
   
@@ -493,7 +429,7 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
     
     ## Apply GSEA -------------------------------------------------------------
     res_GSEA <- GSEA(geneList, TERM2GENE = df_TERM2GENE, verbose = TRUE,
-                     pvalueCutoff = 1,maxGSSize = 7000, minGSSize = 3,
+                     pvalueCutoff = 1, maxGSSize = 7000, minGSSize = 3,
                      by = 'fgsea', nPermSimple = 100000, eps = 1e-30 )
     
     
@@ -526,7 +462,7 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
       #       sep = '') 
       
       
-      plot <- mygseaplot2(res_GSEA,geneSetID = name_legend,
+      plot <- gseaplot2(res_GSEA,geneSetID = name_legend,
                           title = title
                           , subplots = c(1,2,3))
       # ,pvalue_table = FALSE 
@@ -546,7 +482,7 @@ apply_GSEA <- function (miRNA='hsa-miR-92a-3p', miRNA_for_targets=NULL,
   
 
 
-
+###########################################################################
 ###########################################################################
 ## Function to apply KS test on a microRNA --------------------------------
 ## parameters to choose targets conditions of selection 
@@ -560,9 +496,9 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
   print(paste('CDF plot for' ,miRNA))
   name_legend <- str_replace(miRNA,'hsa.','')
   
-  ind_miRNA <- which(rownames(data_miRNA_19) == miRNA)
+  ind_miRNA <- which(rownames(data_miRNA) == miRNA)
   
-  interest_miRNA <- data_miRNA_19[ind_miRNA,]
+  interest_miRNA <- data_miRNA[ind_miRNA,]
   
   median_interet <- signif(median(as.numeric(interest_miRNA)),digits = 2)
   median_interet
@@ -570,7 +506,7 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
   
   
   ## Select genes which RPKM > threshold of expression
-  mean_mRNAs <- apply(data_RNA_19, 1, 
+  mean_mRNAs <- apply(data_RNA, 1, 
                       function(x) mean(x, na.rm = TRUE)) 
   
   selected_genes <- names(mean_mRNAs)[which(mean_mRNAs > thr_exp)]
@@ -599,7 +535,7 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
   
   ## Correlation between the miRNA and mRNAs ---- 
   
-  correlation <- cor(t(interest_miRNA), t(data_RNA_19), 
+  correlation <- cor(t(interest_miRNA), t(data_RNA), 
                      method = 'pearson',use = "pairwise.complete.obs")
   corr_miRNA <- as.vector(correlation)
   names(corr_miRNA) <- colnames(correlation)
@@ -668,13 +604,61 @@ KS_test <- function (miRNA = "hsa-miR-92a-3p",
   else {return (c(len_H1, len_H0, 'NA','NA'))} 
 }
 
+
+
+
+
+
+
+###########################################################################
+###########################################################################
+## Function to apply wilcoxon test on a microRNA --------------------------------
+## parameters to choose targets conditions of selection 
+###########################################################################
+wilcoxon_test <- function (miRNA = "hsa-miR-92a-3p", 
+                     conservation = 'both',
+                     thr_exp = 4,
+                     selection='all', threshold = -0){
+
+  exp_miR <- data_miRNA[which(rownames(data_miRNA) == miRNA ),]
+  genes_selected <- names(mean_mRNAs[which(mean_mRNAs > thr_exp)])
+  
+  targets <- targets_selection(miRNA, conservation =conservation, 
+                               selection = selection,
+                               threshold = threshold)
+  
+  targets_all <- targets_selection(miRNA, conservation ='both')
+  
+  non_targets <- genes_selected[-which(genes_selected %in% targets_all)]
+  tar <- targets[which(targets %in% genes_selected)]
+  
+  len_H1 <- length(tar)
+  len_H0 <- length(non_targets)
+  if (len_H1 > 1){
+    cor_non_targets <- t(cor(t(exp_miR), t(data_RNA[which(rownames(data_RNA) %in% non_targets),]), 
+                             method ='pearson', use = 'pairwise.complete.obs'))
+    cor_targets <- t(cor(t(exp_miR), t(data_RNA[which(rownames(data_RNA) %in% tar),]), 
+                         method ='pearson', use = 'pairwise.complete.obs'))
+    
+    wtest <- wilcox.test(cor_non_targets,cor_targets)   
+    p <- wtest[['p.value']]
+    W <- wtest[["statistic"]]
+    
+    return (c(len_H1, len_H0, p, W))
+    
+  } else {
+    return (c(len_H1, len_H0, 'NA','NA'))
+    } 
+}
+
+
 ###########################################################################
 ###########################################################################
 ## Function for Kolmogorov-Smirnov test to build a plot -------------------
 ## Function to return an annotation using the p-value 
 ## to represent the significance 
 ###########################################################################
-plot_KStest<- function (vector1, vector2){
+plot_KStest <- function (vector1, vector2){
   test <- ks.test(vector1, vector2, exact = TRUE, tol = 1e-30, 
                   simulate.p.value=TRUE, B=3000)
   p <- test[['p.value']]
@@ -694,6 +678,7 @@ plot_KStest<- function (vector1, vector2){
   return(c(p,res))
   
 }
+
 
 ###########################################################################
 ###########################################################################
@@ -877,20 +862,6 @@ pvalue2colors <- function (vec_pvalue){
 }
 
 
-
-###########################################################################
-###########################################################################
-## Function to rename columns of a matrix using the first row -------------
-###########################################################################
-renamecols <- function (matrix_res){
-  col.names <- matrix_res[1,]
-  colnames(matrix_res) <- col.names
-  
-  return (matrix_res[-1,]) 
-  
-}
-
-
 ###########################################################################
 ###########################################################################
 ## Function to order data set in term of number of targets ----------------
@@ -928,3 +899,142 @@ jaccard <- function(a, b) {
   union = length(a) + length(b) - intersection
   return (intersection/union)
 }
+
+
+###########################################################################
+###########################################################################
+## Function to plot one gene as a function of an other 
+## from dataframe or matrix
+## With spearman and pearson correlation
+## and linear regression for x and y
+###########################################################################
+
+correlation_plot <- function(gene1, gene2, exp_table, exp_table2 = 'None', title ='', 
+                             spearman = TRUE, pearson = TRUE, reg = TRUE, ...){
+  
+  
+  genes <- rownames(exp_table)
+  index1 <- which(genes == gene1)
+  
+  
+  if(identical(exp_table2, 'None' )){ # check if there is a second expresssion table
+    
+    index2 <- which(genes == gene2)
+    
+  } else{
+    
+    genes2 <- rownames(exp_table2)
+    index2 <- which(genes2 == gene2)
+    
+  }
+  if(length(index1) > 0 && length(index2) > 0){
+    
+    exp1 <- as.numeric(exp_table[index1,])
+    
+    
+    if(identical(exp_table2, 'None' )){
+      exp2 <- as.numeric(exp_table[index2,])
+    } else{
+      exp2 <- as.numeric(exp_table2[index2,])
+    }
+    
+    
+    spearman <- cor.test(exp1,exp2, method = 'spearman')
+    pearson <- cor.test(exp1,exp2, method = 'pearson')
+    
+    
+    title = paste(title,'\nSpearman =',s3(spearman$estimate), 
+                  '  p =' , s3(spearman$p.value),
+                  '\nPearson =',s3(pearson$estimate), 
+                  '  p =',s3(pearson$p.value)) 
+    
+    plot(exp1,exp2, 
+         xlab  = gene1, ylab = gene2,
+         main = title, ...)
+    
+    
+    if (abs(spearman$estimate) > 0.3 ){
+      ## linear regression for both x and y 
+        expression <- cbind(exp1,exp2)
+      r <- princomp(expression)
+      b <- r$loadings[2,1] / r$loadings[1,1]
+      a <- r$center[2] - b * r$center[1]
+    
+      abline(a,b, col = 'red', cex = 2)
+    
+    }
+  } else {
+    if(length(index1) == 0){
+      print(paste(gene1," was not found in the rownames of the dataset"))
+    } 
+    if(length(index2) == 0){
+      print(paste(gene2," was not found in the rownames of the dataset"))
+    }
+  }
+  
+}
+
+###########################################################################
+###########################################################################
+## Function to plot one gene as a function of an other 
+## from 2 vectors
+## With spearman and pearson correlation
+## and linear regression for x and y
+###########################################################################
+
+correlation_plot_vec <- function(vec1, vec2, title ='', ylab ='', xlab ='',
+                                 spearman = TRUE, pearson = TRUE, reg = TRUE){
+  
+  vec1 <- as.numeric(vec1)
+  vec2 <- as.numeric(vec2)
+  
+  spearman <- cor.test(vec1,vec2, method = 'spearman')
+  pearson <- cor.test(vec1,vec2, method = 'pearson')
+  
+  
+  title = paste(title,'\nSpearman =',s3(spearman$estimate), 
+                '  p =' , s3(spearman$p.value),
+                '\nPearson =',s3(pearson$estimate), 
+                '  p =',s3(pearson$p.value)) 
+  
+  plot(vec1, vec2, 
+       xlab  = xlab, ylab = ylab,
+       main = title)
+  
+}
+
+###########################################################################
+###########################################################################
+## Function to apply signif 3 easily
+s3 <- function (value){
+  
+  return (signif(value,3)) 
+  
+}
+
+
+###########################################################################
+###########################################################################
+## Function to rename columns of a matrix using the first row -------------
+###########################################################################
+renamecols <- function (matrix_res){
+  col.names <- matrix_res[1,]
+  colnames(matrix_res) <- col.names
+  
+  return (matrix_res[-1,]) 
+  
+}
+
+###########################################################################
+###########################################################################
+## Function to rename rows of a matrix using the first col -------------
+###########################################################################
+renamerows <- function (matrix_res){
+  row.names <- matrix_res[,1]
+  rownames(matrix_res) <- row.names
+  
+  return (matrix_res[,-1]) 
+  
+}
+
+
